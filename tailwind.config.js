@@ -19,8 +19,28 @@ export default {
         error:      '#B03030',
       },
       fontFamily: {
-        display: ['Playfair Display', 'serif'],
-        body:    ['DM Sans', 'sans-serif'],
+        'playfair-display': ['Playfair Display', 'serif'],
+        'dm-sans': ['DM Sans', 'sans-serif'],
+      },
+      keyframes: {
+        'in': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        'zoom-in-95': {
+          '0%': { opacity: '0', transform: 'scale(0.95)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+        'slide-in-from-top-1': {
+          '0%': { transform: 'translateY(-0.25rem)' },
+          '100%': { transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        'in': 'fadeIn 0.2s ease-in',
+        'fade-in': 'fadeIn 0.2s ease-in',
+        'zoom-in-95': 'zoom-in-95 0.2s ease-out',
+        'spin': 'spin 1s linear infinite',
       },
     },
   },
