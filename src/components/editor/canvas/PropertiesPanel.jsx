@@ -18,17 +18,18 @@ export default function PropertiesPanel() {
 
   if (!selectedComponent) {
     return (
-      <div className="w-64 border-l border-border bg-white flex items-center justify-center text-text-muted text-sm text-center p-4">
-        <p>Select a component to edit</p>
+      <div className="w-72 border-l border-border/70 bg-white/85 backdrop-blur-md flex items-center justify-center text-text-muted text-sm text-center p-6">
+        <p>Sélectionnez un élément pour éditer ses propriétés</p>
       </div>
     );
   }
 
   return (
-    <div className="w-64 border-l border-border bg-white overflow-y-auto">
+    <div className="w-72 border-l border-border/70 bg-white/85 overflow-y-auto backdrop-blur-md">
       {/* Header */}
-      <div className="sticky top-0 bg-white border-b border-border p-4">
-        <h3 className="font-bold text-text">Properties</h3>
+      <div className="sticky top-0 bg-white/90 border-b border-border/70 p-4">
+        <h3 className="font-bold text-text">Propriétés</h3>
+        <p className="text-xs text-text-muted">Affinez le style et les couleurs</p>
       </div>
 
       {/* Properties form */}
@@ -86,7 +87,7 @@ export default function PropertiesPanel() {
         <div className="mt-6 pt-4 border-t border-border">
           <p className="text-xs font-medium text-text-muted mb-2">Preview</p>
           <div
-            className="p-4 rounded-lg text-center"
+            className="p-4 rounded-lg text-center shadow-inner"
             style={{
               backgroundColor: properties.bgColor,
               color: properties.textColor,

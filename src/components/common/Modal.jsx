@@ -16,15 +16,15 @@ export default function Modal({ isOpen, onClose, title, children }) {
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-in fade-in"
+      className="fixed inset-0 bg-gradient-to-br from-black/40 via-black/30 to-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-xl shadow-2xl max-w-md w-full animate-in zoom-in-95 fade-in duration-200"
+        className="glass-panel rounded-2xl max-w-md w-full animate-in zoom-in-95 fade-in duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border/80">
           <h2 className="text-xl font-playfair-display font-bold text-text">{title}</h2>
           <button
             onClick={onClose}
@@ -38,7 +38,7 @@ export default function Modal({ isOpen, onClose, title, children }) {
         </div>
 
         {/* Content */}
-        <div className="px-6 py-4">{children}</div>
+        <div className="px-6 py-5">{children}</div>
       </div>
     </div>
   );

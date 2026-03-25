@@ -27,10 +27,35 @@
 
 body {
   font-family: 'DM Sans', sans-serif;
-  background-color: var(--bg);
+  background: radial-gradient(circle at 10% 20%, #ffeeda 0, rgba(255, 237, 218, 0) 32%),
+    radial-gradient(circle at 80% 0%, #f8d6a8 0, rgba(248, 214, 168, 0) 28%),
+    linear-gradient(135deg, #fbf4e9 0%, #f3e5d7 52%, #f7e9dc 100%);
   color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
 }
 
 h1, h2, h3 {
   font-family: 'Playfair Display', serif;
+}
+
+.grain-overlay::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  z-index: 1;
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(232, 217, 196, 0.8);
+  box-shadow: 0 20px 40px rgba(20, 8, 4, 0.08);
+  backdrop-filter: blur(14px);
+}
+
+.pill {
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }

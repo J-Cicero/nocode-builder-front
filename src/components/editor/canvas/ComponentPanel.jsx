@@ -35,22 +35,23 @@ export default function ComponentPanel() {
   };
 
   return (
-    <div className="w-56 border-r border-border bg-white overflow-y-auto">
+    <div className="w-64 border-r border-border/70 bg-white/85 backdrop-blur-md overflow-y-auto">
       {/* Header */}
-      <div className="sticky top-0 bg-white border-b border-border p-4">
-        <h3 className="font-bold text-text">Components</h3>
+      <div className="sticky top-0 bg-white/90 border-b border-border/70 p-4">
+        <h3 className="font-bold text-text text-lg">Bibliothèque</h3>
+        <p className="text-xs text-text-muted">Glissez vos blocs préférés</p>
       </div>
 
       {/* Sections */}
       <div>
         {Object.entries(COMPONENTS_LIBRARY).map(([section, components]) => (
-          <div key={section} className="border-b border-border">
+          <div key={section} className="border-b border-border/70">
             {/* Section header */}
             <button
               onClick={() => toggleSection(section)}
-              className="w-full flex items-center justify-between px-4 py-3 hover:bg-bg transition-colors text-left"
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-bg/70 transition-colors text-left"
             >
-              <span className="font-medium text-text">{section}</span>
+              <span className="font-semibold text-text">{section}</span>
               <svg
                 className={`w-4 h-4 text-text-muted transition-transform ${
                   expandedSections[section] ? "rotate-180" : ""
@@ -70,10 +71,10 @@ export default function ComponentPanel() {
                   <div
                     key={comp.id}
                     draggable
-                    className="flex items-center gap-3 px-3 py-2 rounded cursor-grab active:cursor-grabbing hover:bg-bg transition-colors mx-1"
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-grab active:cursor-grabbing hover:bg-bg transition-all mx-1 border border-transparent hover:border-border"
                   >
                     <span className="text-xl">{comp.icon}</span>
-                    <span className="text-sm text-text">{comp.name}</span>
+                    <span className="text-sm text-text font-semibold">{comp.name}</span>
                   </div>
                 ))}
               </div>

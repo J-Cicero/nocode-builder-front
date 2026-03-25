@@ -10,15 +10,15 @@ export default function Button({
   className = "",
 }) {
   const baseStyles =
-    "font-medium transition-all duration-200 flex items-center justify-center gap-2 rounded-lg font-dm-sans";
+    "font-medium transition-all duration-200 flex items-center justify-center gap-2 rounded-lg font-dm-sans active:translate-y-px";
 
   const variantStyles = {
     primary:
-      "bg-primary text-white hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed",
+      "bg-gradient-to-r from-primary to-primary-dark text-white shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed",
     secondary:
-      "bg-transparent border-2 border-primary text-primary hover:bg-primary-light disabled:opacity-50 disabled:cursor-not-allowed",
+      "border border-primary text-primary bg-white/90 hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed",
     danger: "bg-error text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
-    ghost: "bg-transparent text-text-muted hover:text-text disabled:opacity-50 disabled:cursor-not-allowed",
+    ghost: "bg-transparent text-text-muted hover:text-text hover:bg-border/60 disabled:opacity-50 disabled:cursor-not-allowed",
   };
 
   const sizeStyles = {
