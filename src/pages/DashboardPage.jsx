@@ -8,7 +8,7 @@ import { useAuth } from "../store/authStore";
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { projects, createProject, deleteProject } = useProjects();
+  const { projects, createProject, deleteProject, loading, error } = useProjects();
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,8 +33,8 @@ export default function DashboardPage() {
     archived: projects.filter((p) => p.status === "archived").length,
   };
 
-  const handleCreate = (data) => {
-    createProject({
+  const handleCreate = async (data) => {
+    await createProject({
       name: data.name,
       description: data.description || "Manage your app seamlessly.",
       is_public: data.is_public,
@@ -231,6 +231,17 @@ export default function DashboardPage() {
           ))
         )}
       </section>
+
+      {loading && (
+        <div style={{ padding: 16, color: "#7A5C44", fontFamily: "'DM Sans', sans-serif" }}>
+          Loading projects...
+        </div>
+      )}
+      {error && (
+        <div style={{ padding: 16, color: "#B03030", fontFamily: "'DM Sans', sans-serif" }}>
+          {error}
+        </div>
+      )}
 
       <NewProjectModal
         isOpen={isModalOpen}

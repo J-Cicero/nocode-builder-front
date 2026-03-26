@@ -10,13 +10,16 @@ export default function RegisterPage() {
   const { register, token, isLoading } = useAuth();
   const [plan, setPlan] = useState("free");
   const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
+    name: "",
+    surname: "",
     email: "",
     password: "",
     phone: "",
-    companyName: "",
-    companySize: "",
+    birth_place: "",
+    birth_date: "",
+    country: "",
+    company_name: "",
+    company_size: "",
   });
   const [error, setError] = useState("");
 
@@ -41,16 +44,33 @@ export default function RegisterPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    if (!form.firstName || !form.lastName || !form.email || !form.password) {
+    if (!form.name || !form.surname || !form.email || !form.password) {
       setError("Please fill in all required fields.");
       return;
     }
-    if (plan === "enterprise" && !form.companyName) {
+    if (plan === "enterprise" && !form.company_name) {
       setError("Please provide your company name.");
       return;
     }
+    if (!/[A-Za-z]/.test(form.password) || !/\d/.test(form.password) || !/[@$!%*?&]/.test(form.password)) {
+      setError("Password must contain a letter, a number and a special char (@$!%*?&).");
+      return;
+    }
     try {
-      await register({ ...form, plan });
+      const payload = {
+        email: form.email,
+        name: form.name?.trim(),
+        surname: form.surname?.trim(),
+        birth_place: form.birth_place?.trim() || null,
+        birth_date: form.birth_date || null,
+        country: form.country?.trim() || null,
+        phone: form.phone?.trim() || null,
+        password: form.password,
+        ...(plan === "enterprise"
+          ? { company_name: form.company_name, company_size: form.company_size }
+          : {}),
+      };
+      await register(payload, plan);
       navigate("/dashboard");
     } catch (err) {
       setError(err?.message || "Registration failed.");
@@ -189,17 +209,17 @@ export default function RegisterPage() {
             <div style={{ display: "flex", gap: 12 }}>
               <Input
                 label="First Name"
-                name="firstName"
+                name="name"
                 placeholder="Jean"
-                value={form.firstName}
-                onChange={(e) => handleChange("firstName", e.target.value)}
+                value={form.name}
+                onChange={(e) => handleChange("name", e.target.value)}
               />
               <Input
                 label="Last Name"
-                name="lastName"
+                name="surname"
                 placeholder="Dupont"
-                value={form.lastName}
-                onChange={(e) => handleChange("lastName", e.target.value)}
+                value={form.surname}
+                onChange={(e) => handleChange("surname", e.target.value)}
               />
             </div>
 
@@ -244,6 +264,30 @@ export default function RegisterPage() {
             </div>
 
             <Input
+              label="Country (optional)"
+              name="country"
+              placeholder="Côte d'Ivoire"
+              value={form.country}
+              onChange={(e) => handleChange("country", e.target.value)}
+            />
+
+            <Input
+              label="Birth place (optional)"
+              name="birth_place"
+              placeholder="Abidjan"
+              value={form.birth_place}
+              onChange={(e) => handleChange("birth_place", e.target.value)}
+            />
+
+            <Input
+              label="Birth date (optional)"
+              name="birth_date"
+              type="date"
+              value={form.birth_date}
+              onChange={(e) => handleChange("birth_date", e.target.value)}
+            />
+
+            <Input
               label="Phone (optional)"
               name="phone"
               type="tel"
@@ -261,10 +305,10 @@ export default function RegisterPage() {
               <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 6 }}>
                 <Input
                   label="Company Name"
-                  name="companyName"
+                  name="company_name"
                   placeholder="Your company"
-                  value={form.companyName}
-                  onChange={(e) => handleChange("companyName", e.target.value)}
+                  value={form.company_name}
+                  onChange={(e) => handleChange("company_name", e.target.value)}
                 />
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <label style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 500, color: "#2C1A0E" }}>
@@ -292,7 +336,7 @@ export default function RegisterPage() {
                         menu.style.display = menu.style.display === "block" ? "none" : "block";
                       }}
                     >
-                      <span>{form.companySize || "Select size"}</span>
+                      <span>{form.company_size || "Select size"}</span>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7A5C44" strokeWidth="2">
                         <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
@@ -311,11 +355,11 @@ export default function RegisterPage() {
                         boxShadow: "0 10px 24px rgba(26,14,10,0.12)",
                       }}
                     >
-                      {["1-10 employees", "11-50 employees", "51-200 employees", "200+ employees"].map((opt) => (
+                      {["1-10", "11-50", "51-200", "200+"].map((opt) => (
                         <div
                           key={opt}
                           onClick={() => {
-                            handleChange("companySize", opt);
+                            handleChange("company_size", opt);
                             const menu = document.activeElement?.nextSibling;
                             if (menu) menu.style.display = "none";
                           }}

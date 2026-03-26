@@ -1,94 +1,70 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import projectsApi from "../api/projectsApi";
+import { useAuth } from "./authStore";
 
 const ProjectContext = createContext();
 
-const DEFAULT_PROJECTS = [
-  {
-    tracking_id: "p1",
-    name: "Salon Manager",
-    description: "Manage appointments and clients",
-    status: "published",
-    is_public: false,
-    created_at: "2025-01-15",
-    config: { theme: { primary_color: "#C4622D" }, pages: [], datasources: [] }
-  },
-  {
-    tracking_id: "p2",
-    name: "Inventory App",
-    description: "Track products and stock levels",
-    status: "draft",
-    is_public: false,
-    created_at: "2025-02-20",
-    config: { theme: { primary_color: "#2D5A1B" }, pages: [], datasources: [] }
-  },
-  {
-    tracking_id: "p3",
-    name: "Event Planner",
-    description: "Organize community events",
-    status: "archived",
-    is_public: true,
-    created_at: "2025-03-01",
-    config: { theme: { primary_color: "#D4A017" }, pages: [], datasources: [] }
-  }
-];
-
 export function ProjectProvider({ children }) {
-  const [projects, setProjects] = useState(DEFAULT_PROJECTS);
+  const { token } = useAuth();
+  const [projects, setProjects] = useState([]);
   const [currentProject, setCurrentProject] = useState(null);
   const [activeTab, setActiveTab] = useState("tables");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Charger les projets depuis localStorage au montage
   useEffect(() => {
-    const storedProjects = localStorage.getItem("projects");
-    if (storedProjects) {
+    const fetchProjects = async () => {
+      if (!token) return;
+      setLoading(true);
+      setError(null);
       try {
-        setProjects(JSON.parse(storedProjects));
-      } catch (error) {
-        console.error("Erreur parsing stored projects:", error);
-        localStorage.removeItem("projects");
+        const { data } = await projectsApi.getAll();
+        setProjects(data.projects || []);
+      } catch (err) {
+        setError(err?.response?.data?.detail || err.message);
+      } finally {
+        setLoading(false);
       }
-    }
-  }, []);
-
-  // Sauvegarder les projets dans localStorage quand ils changent
-  useEffect(() => {
-    localStorage.setItem("projects", JSON.stringify(projects));
-  }, [projects]);
-
-  const createProject = (data) => {
-    const newProject = {
-      tracking_id: `p-${Date.now()}`,
-      name: data.name,
-      description: data.description || "Manage your app seamlessly.",
-      status: "draft",
-      is_public: data.is_public || false,
-      created_at: new Date().toISOString(),
-      config: { theme: { primary_color: "#C4622D" }, pages: [], datasources: [] }
     };
-    setProjects([...projects, newProject]);
-    return newProject;
+    fetchProjects();
+  }, [token]);
+
+  const createProject = async (data) => {
+    const payload = {
+      name: data.name,
+      description: data.description || null,
+      is_public: data.is_public || false,
+    };
+    const { data: created } = await projectsApi.create(payload);
+    setProjects((prev) => [...prev, created]);
+    return created;
   };
 
-  const deleteProject = (tracking_id) => {
-    setProjects(projects.filter(p => p.tracking_id !== tracking_id));
+  const deleteProject = async (tracking_id) => {
+    await projectsApi.delete(tracking_id);
+    setProjects((prev) => prev.filter((p) => p.tracking_id !== tracking_id));
     if (currentProject?.tracking_id === tracking_id) {
       setCurrentProject(null);
     }
   };
 
-  const updateProject = (tracking_id, updates) => {
-    setProjects(projects.map(p =>
-      p.tracking_id === tracking_id ? { ...p, ...updates } : p
-    ));
+  const updateProject = async (tracking_id, updates) => {
+    const { data } = await projectsApi.update(tracking_id, updates);
+    setProjects((prev) =>
+      prev.map((p) => (p.tracking_id === tracking_id ? data : p))
+    );
     if (currentProject?.tracking_id === tracking_id) {
-      setCurrentProject({ ...currentProject, ...updates });
+      setCurrentProject(data);
     }
+    return data;
   };
 
   const value = {
     projects,
     currentProject,
     activeTab,
+    loading,
+    error,
     createProject,
     deleteProject,
     updateProject,

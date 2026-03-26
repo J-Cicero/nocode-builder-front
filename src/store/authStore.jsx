@@ -1,76 +1,92 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import authApi from "../api/authApi";
 
 const AuthContext = createContext();
-
-// Mock data required by design brief
-const MOCK_USER = {
-  id: "abc123",
-  name: "Jean Dupont",
-  email: "jean@example.com",
-  plan: "free",
-  role: "user"
-};
-const MOCK_PASSWORD = "Demo1234!";
-const TOKEN_KEY = "access_token";
+const ACCESS_KEY = "access_token";
+const REFRESH_KEY = "refresh_token";
 const USER_KEY = "authUser";
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Restore auth from localStorage
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem(USER_KEY);
-      const storedToken = localStorage.getItem(TOKEN_KEY);
+      const storedToken = localStorage.getItem(ACCESS_KEY);
       if (storedUser && storedToken) {
         setUser(JSON.parse(storedUser));
         setToken(storedToken);
       }
-    } catch (error) {
-      console.error("Erreur parsing stored user:", error);
+    } catch (err) {
+      console.error("Erreur parsing stored user:", err);
       localStorage.removeItem(USER_KEY);
-      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(ACCESS_KEY);
+      localStorage.removeItem(REFRESH_KEY);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
+
+  const persistSession = (userPayload, access, refresh) => {
+    setUser(userPayload);
+    setToken(access);
+    localStorage.setItem(USER_KEY, JSON.stringify(userPayload));
+    localStorage.setItem(ACCESS_KEY, access);
+    localStorage.setItem(REFRESH_KEY, refresh);
+  };
 
   const login = async (email, password) => {
     setIsLoading(true);
+    setError(null);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      if (email === MOCK_USER.email && password === MOCK_PASSWORD) {
-        const sessionToken = "mock-token-123";
-        setUser(MOCK_USER);
-        setToken(sessionToken);
-        localStorage.setItem(USER_KEY, JSON.stringify(MOCK_USER));
-        localStorage.setItem(TOKEN_KEY, sessionToken);
-        return { user: MOCK_USER, token: sessionToken };
-      }
-      throw new Error("Invalid email or password. Please try again.");
+      const { data } = await authApi.login(email, password);
+      // save tokens first to authorize the /auth/me call
+      localStorage.setItem(ACCESS_KEY, data.access_token);
+      localStorage.setItem(REFRESH_KEY, data.refresh_token);
+      const profile = await authApi.me();
+      const sessionUser = profile.data;
+      persistSession(sessionUser, data.access_token, data.refresh_token);
+      return { user: sessionUser, token: data.access_token };
+    } catch (err) {
+      setError(err?.response?.data?.detail || err.message);
+      throw err;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const register = async (data) => {
+  const register = async (payload, plan = "free") => {
     setIsLoading(true);
+    setError(null);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      const newUser = {
-        ...MOCK_USER,
-        id: `${Date.now()}`,
-        name: `${data.firstName} ${data.lastName}`,
-        email: data.email || MOCK_USER.email,
-        plan: data.plan || "free"
+      const cleaned = {
+        ...payload,
+        email: payload.email?.trim(),
+        name: payload.name?.trim(),
+        surname: payload.surname?.trim(),
+        birth_place: payload.birth_place?.trim() || null,
+        birth_date: payload.birth_date || null,
+        country: payload.country?.trim() || null,
+        phone: payload.phone?.trim() || null,
+        password: payload.password,
       };
-      const sessionToken = "mock-token-123";
-      setUser(newUser);
-      setToken(sessionToken);
-      localStorage.setItem(USER_KEY, JSON.stringify(newUser));
-      localStorage.setItem(TOKEN_KEY, sessionToken);
-      return { user: newUser, token: sessionToken };
+      const registerCall =
+        plan === "enterprise" ? authApi.registerEnterprise(cleaned) : authApi.registerFree(cleaned);
+      const { data } = await registerCall;
+      // registration endpoints return the created user, but no tokens
+      // log the user in right after
+      const loginRes = await authApi.login(cleaned.email, cleaned.password);
+      localStorage.setItem(ACCESS_KEY, loginRes.data.access_token);
+      localStorage.setItem(REFRESH_KEY, loginRes.data.refresh_token);
+      const profile = await authApi.me();
+      persistSession(profile.data, loginRes.data.access_token, loginRes.data.refresh_token);
+      return { user: profile.data, token: loginRes.data.access_token };
+    } catch (err) {
+      setError(err?.response?.data?.detail || err.message);
+      throw err;
     } finally {
       setIsLoading(false);
     }
@@ -80,17 +96,19 @@ export function AuthProvider({ children }) {
     setUser(null);
     setToken(null);
     localStorage.removeItem(USER_KEY);
-    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(ACCESS_KEY);
+    localStorage.removeItem(REFRESH_KEY);
   };
 
   const value = {
     user,
     token,
-    isAuthenticated: !!token,
+    error,
+    isAuthenticated: !!token || !!localStorage.getItem(ACCESS_KEY),
     isLoading,
     login,
     register,
-    logout
+    logout,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

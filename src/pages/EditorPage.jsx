@@ -16,32 +16,51 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import schemaApi from "../api/schemaApi";
+import interfaceApi from "../api/interfaceApi";
+import { useAuth } from "../store/authStore";
+import { useInterface } from "../hooks/useInterface";
+import { useSchema } from "../hooks/useSchema";
+import { useWorkflows } from "../hooks/useWorkflows";
+import Loader from "../components/common/Loader";
 
 export default function EditorPage() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { token } = useAuth();
 
   // ─────────────────────────── STATE ───────────────────────────
   const [activeTab, setActiveTab] = useState("interface");
-  const [pages, setPages] = useState(["Home", "Products"]);
-  const [activePage, setActivePage] = useState(0);
-  const initialComponents = [
-    [
-      { id: "1", type: "title", props: { text: "Welcome to my app" } },
-      {
-        id: "2",
-        type: "text",
-        props: { text: "Drag components to build your page." },
-      },
-      {
-        id: "3",
-        type: "button",
-        props: { label: "Get Started", color: "#C4622D", variant: "filled" },
-      },
-    ],
-    [],
-  ];
-  const [canvasComponents, setCanvasComponents] = useState(initialComponents);
+  const {
+    pages,
+    componentsByPage,
+    loading: loadingInterface,
+    error: interfaceError,
+    hydrate,
+    createPage,
+    deletePage: deletePageApi,
+    createComponent: createComponentApi,
+    deleteComponent: deleteComponentApi,
+    updateComponent: updateComponentApi,
+    reorderComponents,
+    setPages,
+  } = useInterface(id);
+  const {
+    tables,
+    fieldsByTable,
+    loading: loadingSchema,
+    error: schemaError,
+    refresh: refreshSchema,
+  } = useSchema(id);
+  const [activePageId, setActivePageId] = useState(null);
+  const {
+    workflows,
+    loading: loadingWorkflows,
+    error: workflowsError,
+    create: createWorkflow,
+    update: updateWorkflow,
+    remove: removeWorkflow,
+  } = useWorkflows(id);
   const [selectedComponent, setSelectedComponent] = useState(null);
   const [device, setDevice] = useState("mobile");
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
@@ -53,7 +72,7 @@ export default function EditorPage() {
   ]);
   const [chatInput, setChatInput] = useState("");
   const [isAiTyping, setIsAiTyping] = useState(false);
-  const [selectedTable, setSelectedTable] = useState("Users");
+  const [selectedTableId, setSelectedTableId] = useState(null);
   const [workflowModalOpen, setWorkflowModalOpen] = useState(false);
   const [workflowStep, setWorkflowStep] = useState(1);
   const [isMobileLayout, setIsMobileLayout] = useState(false);
@@ -65,6 +84,19 @@ export default function EditorPage() {
     name: "Inventory App",
     status: "draft",
   };
+
+  // set default active page when pages fetched
+  useEffect(() => {
+    if (pages.length && !activePageId) {
+      setActivePageId(pages[0].tracking_id);
+    }
+  }, [pages, activePageId]);
+
+  useEffect(() => {
+    if (tables.length && !selectedTableId) {
+      setSelectedTableId(tables[0].tracking_id);
+    }
+  }, [tables, selectedTableId]);
 
   // ──────────────────────── RESPONSIVE ────────────────────────
   useEffect(() => {
@@ -136,24 +168,6 @@ export default function EditorPage() {
       { id: 3, name: "description", type: "Text", required: false, default: "" },
     ],
   };
-
-  const workflows = [
-    {
-      name: "Welcome Email",
-      summary: "When Users is created → Send email",
-      active: true,
-    },
-    {
-      name: "Low Stock Alert",
-      summary: "When Products is updated → Send notification",
-      active: true,
-    },
-    {
-      name: "Order Confirmation",
-      summary: "When Orders is created → Send email",
-      active: false,
-    },
-  ];
 
   // ──────────────────────── DND SENSORS ────────────────────────
   const sensors = useSensors(
@@ -260,10 +274,47 @@ export default function EditorPage() {
     charts: true,
   });
 
+  const toBackendComponent = (type, props, order) => {
+    const mapping = {
+      container: "conteneur",
+      columns: "conteneur",
+      divider: "conteneur",
+      spacer: "conteneur",
+      title: "texte",
+      text: "texte",
+      badge: "texte",
+      button: "bouton",
+      input: "champ_input",
+      textarea: "champ_input",
+      dropdown: "champ_input",
+      checkbox: "champ_input",
+      file: "champ_input",
+      dataList: "liste",
+      card: "carte",
+      image: "image",
+      barChart: "conteneur",
+      lineChart: "conteneur",
+      pieChart: "conteneur",
+    };
+    const backendType = mapping[type] || "conteneur";
+    return {
+      type: backendType,
+      parent_id: null,
+      position_x: 0,
+      position_y: order,
+      largeur: "100%",
+      hauteur: "auto",
+      styles: {},
+      config: { uiType: type, props },
+      connecte_a: null,
+      ordre: order,
+    };
+  };
+
   // ──────────────────────── DND HANDLERS ───────────────────────
   const handleDragStart = () => {};
 
-  const handleDragEnd = (event) => {
+  const handleDragEnd = async (event) => {
     const { active, over } = event;
     if (!over) return;
 
@@ -272,31 +323,24 @@ export default function EditorPage() {
 
     // Palette drop onto canvas
     if (activeData.fromPalette && overId === "canvas") {
-      const newComponent = {
-        id: Date.now().toString(),
-        type: activeData.type,
-        props: componentDefaults[activeData.type] || {},
-      };
-      setCanvasComponents((prev) => {
-        const copy = [...prev];
-        copy[activePage] = [...(copy[activePage] || []), newComponent];
-        return copy;
-      });
-      setSelectedComponent({ page: activePage, id: newComponent.id });
+      const payload = toBackendComponent(
+        activeData.type,
+        componentDefaults[activeData.type] || {},
+        componentsByPage[activePageId]?.length || 0
+      );
+      const created = await createComponentApi(activePageId, payload);
+      setSelectedComponent({ page: activePageId, id: created.tracking_id });
       return;
     }
 
     // Sortable reorder within canvas
     if (!activeData.fromPalette && overId && overId !== active.id) {
-      setCanvasComponents((prev) => {
-        const copy = [...prev];
-        const currentList = [...(copy[activePage] || [])];
-        const oldIndex = currentList.findIndex((c) => c.id === active.id);
-        const newIndex = currentList.findIndex((c) => c.id === overId);
-        if (oldIndex === -1 || newIndex === -1) return prev;
-        copy[activePage] = arrayMove(currentList, oldIndex, newIndex);
-        return copy;
-      });
+      const list = componentsByPage[activePageId] || [];
+      const oldIndex = list.findIndex((c) => c.tracking_id === active.id);
+      const newIndex = list.findIndex((c) => c.tracking_id === overId);
+      if (oldIndex === -1 || newIndex === -1) return;
+      const newOrder = arrayMove(list, oldIndex, newIndex).map((c) => c.tracking_id);
+      await reorderComponents(activePageId, newOrder);
     }
   };
 
@@ -346,71 +390,108 @@ export default function EditorPage() {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const removeComponent = (id) => {
-    setCanvasComponents((prev) => {
-      const copy = [...prev];
-      copy[activePage] = (copy[activePage] || []).filter((c) => c.id !== id);
-      return copy;
-    });
+  const removeComponent = async (id) => {
+    await deleteComponentApi(id, activePageId);
     setSelectedComponent(null);
   };
 
-  const duplicateComponent = (id) => {
-    setCanvasComponents((prev) => {
-      const copy = [...prev];
-      const list = copy[activePage] || [];
-      const idx = list.findIndex((c) => c.id === id);
-      if (idx === -1) return prev;
-      const dup = { ...list[idx], id: Date.now().toString() };
-      copy[activePage] = [...list.slice(0, idx + 1), dup, ...list.slice(idx + 1)];
-      return copy;
-    });
+  const duplicateComponent = async (id) => {
+    const list = componentsByPage[activePageId] || [];
+    const comp = list.find((c) => c.tracking_id === id);
+    if (!comp) return;
+    const payload = {
+      type: comp.type,
+      parent_id: comp.parent_id,
+      position_x: 0,
+      position_y: list.length,
+      largeur: comp.largeur || "100%",
+      hauteur: comp.hauteur || "auto",
+      styles: comp.styles || {},
+      config: comp.config || {},
+      connecte_a: comp.connecte_a || null,
+      ordre: list.length,
+    };
+    await createComponentApi(activePageId, payload);
   };
 
-  const moveComponent = (id, direction) => {
-    setCanvasComponents((prev) => {
-      const copy = [...prev];
-      const list = [...(copy[activePage] || [])];
-      const idx = list.findIndex((c) => c.id === id);
-      if (idx === -1) return prev;
-      const newIndex = direction === "up" ? idx - 1 : idx + 1;
-      if (newIndex < 0 || newIndex >= list.length) return prev;
-      copy[activePage] = arrayMove(list, idx, newIndex);
-      return copy;
-    });
+  const moveComponent = async (id, direction) => {
+    const list = componentsByPage[activePageId] || [];
+    const idx = list.findIndex((c) => c.tracking_id === id);
+    if (idx === -1) return;
+    const newIndex = direction === "up" ? idx - 1 : idx + 1;
+    if (newIndex < 0 || newIndex >= list.length) return;
+    const newOrder = arrayMove(list, idx, newIndex).map((c) => c.tracking_id);
+    await reorderComponents(activePageId, newOrder);
   };
 
-  const updateComponentProps = (id, updater) => {
-    setCanvasComponents((prev) => {
-      const copy = [...prev];
-      copy[activePage] = (copy[activePage] || []).map((c) =>
-        c.id === id ? { ...c, props: { ...c.props, ...updater } } : c
-      );
-      return copy;
-    });
+  const updateComponentProps = async (id, updater) => {
+    const list = componentsByPage[activePageId] || [];
+    const comp = list.find((c) => c.tracking_id === id);
+    if (!comp) return;
+    const newConfig = {
+      ...(comp.config || {}),
+      props: { ...(comp.config?.props || {}), ...updater },
+    };
+    await updateComponentApi(id, { config: newConfig }, activePageId);
   };
 
-  const addPage = () => {
+  const addPage = async () => {
     const newName = `Page ${pages.length + 1}`;
-    setPages((prev) => [...prev, newName]);
-    setCanvasComponents((prev) => [...prev, []]);
-    setActivePage(pages.length);
+    const chemin = `/${newName.toLowerCase().replace(/\s+/g, "-")}`;
+    const created = await createPage({
+      nom: newName,
+      chemin,
+      est_accueil: pages.length === 0,
+      ordre: pages.length,
+    });
+    setActivePageId(created.tracking_id);
+    await hydrate();
   };
 
-  const deletePage = (index) => {
+  const deletePage = async (pageId) => {
     if (pages.length <= 1) return;
-    setPages((prev) => prev.filter((_, i) => i !== index));
-    setCanvasComponents((prev) => prev.filter((_, i) => i !== index));
-    if (activePage >= pages.length - 1) setActivePage(pages.length - 2);
-    setSelectedComponent(null);
+    await deletePageApi(pageId);
+    if (activePageId === pageId) {
+      const next = pages.find((p) => p.tracking_id !== pageId);
+      setActivePageId(next ? next.tracking_id : null);
+      setSelectedComponent(null);
+    }
+    await hydrate();
   };
 
   const frameWidth = device === "mobile" ? 375 : device === "tablet" ? 768 : "100%";
 
+  const addField = async () => {
+    if (!selectedTableId) return;
+    const name = `field_${Date.now().toString().slice(-5)}`;
+    await schemaApi.createField(selectedTableId, {
+      name,
+      display_name: name,
+      type: "text",
+      required: false,
+      unique: false,
+      indexed: false,
+      config: {},
+    });
+    await refreshSchema();
+  };
+
+  const toggleFieldRequired = async (field) => {
+    await schemaApi.updateField(field.tracking_id || field.id, {
+      required: !field.required,
+    });
+    await refreshSchema();
+  };
+
+  const deleteField = async (field) => {
+    await schemaApi.deleteField(field.tracking_id || field.id);
+    await refreshSchema();
+  };
+
   const selectedInPage =
     selectedComponent &&
-    selectedComponent.page === activePage &&
-    (canvasComponents[activePage] || []).some((c) => c.id === selectedComponent.id);
+    selectedComponent.page === activePageId &&
+    (componentsByPage[activePageId] || []).some((c) => c.tracking_id === selectedComponent.id);
 
   // ───────────────────────── RENDER ─────────────────────────────
   return (
@@ -492,27 +573,29 @@ export default function EditorPage() {
                 position: "relative",
               }}
             >
-              <PagesBar
-                pages={pages}
-                activePage={activePage}
-                setActivePage={(index) => {
-                  setActivePage(index);
-                  setSelectedComponent(null);
-                }}
-                deletePage={deletePage}
-                addPage={addPage}
-              />
+                <PagesBar
+                  pages={pages}
+                  activePageId={activePageId}
+                  setActivePage={(pid) => {
+                    setActivePageId(pid);
+                    setSelectedComponent(null);
+                  }}
+                  deletePage={deletePage}
+                  addPage={addPage}
+                />
 
               <DeviceToggle device={device} setDevice={setDevice} />
 
               <CanvasArea
                 frameWidth={frameWidth}
-                components={canvasComponents[activePage] || []}
+                components={componentsByPage[activePageId] || []}
                 selectedId={selectedInPage ? selectedComponent.id : null}
-                onSelect={(id) => setSelectedComponent({ page: activePage, id })}
+                onSelect={(id) => setSelectedComponent({ page: activePageId, id })}
                 onDelete={removeComponent}
                 onDuplicate={duplicateComponent}
                 onMove={moveComponent}
+                loading={loadingInterface}
+                error={interfaceError}
               />
             </div>
 
@@ -520,8 +603,8 @@ export default function EditorPage() {
               <PropertiesPanel
                 component={
                   selectedInPage
-                    ? (canvasComponents[activePage] || []).find(
-                        (c) => c.id === selectedComponent.id
+                    ? (componentsByPage[activePageId] || []).find(
+                        (c) => c.tracking_id === selectedComponent.id
                       )
                     : null
                 }
@@ -536,16 +619,33 @@ export default function EditorPage() {
 
         {activeTab === "tables" && (
           <TablesTab
-            selectedTable={selectedTable}
-            setSelectedTable={setSelectedTable}
-            mockTables={mockTables}
+            selectedTableId={selectedTableId}
+            setSelectedTableId={setSelectedTableId}
+            tables={tables}
+            fieldsByTable={fieldsByTable}
+            loading={loadingSchema}
+            error={schemaError}
+            onAddField={addField}
+            onToggleRequired={toggleFieldRequired}
+            onDeleteField={deleteField}
           />
         )}
 
         {activeTab === "workflows" && (
           <WorkflowsTab
             workflows={workflows}
-            openModal={() => setWorkflowModalOpen(true)}
+            loading={loadingWorkflows}
+            error={workflowsError}
+            onCreate={() =>
+              createWorkflow({
+                nom: `Workflow ${workflows.length + 1}`,
+                description: "Auto-created",
+                actif: true,
+                etapes: [],
+              })
+            }
+            onToggle={(wf) => updateWorkflow(wf.tracking_id, { actif: !wf.actif })}
+            onDelete={(wf) => removeWorkflow(wf.tracking_id)}
           />
         )}
 
@@ -862,7 +962,7 @@ function PaletteTile({ item }) {
   );
 }
 
-function PagesBar({ pages, activePage, setActivePage, deletePage, addPage }) {
+function PagesBar({ pages, activePageId, setActivePage, deletePage, addPage }) {
   return (
     <div
       style={{
@@ -874,38 +974,37 @@ function PagesBar({ pages, activePage, setActivePage, deletePage, addPage }) {
         flexWrap: "wrap",
       }}
     >
-      {pages.map((page, index) => (
+      {pages.map((page) => (
         <div
-          key={page + index}
+          key={page.tracking_id}
           style={{
             display: "flex",
             alignItems: "center",
             gap: 8,
             padding: "6px 12px",
             borderRadius: 20,
-            backgroundColor: activePage === index ? "#C4622D" : "#FFFFFF",
-            color: activePage === index ? "#FFFFFF" : "#7A5C44",
-            border: activePage === index ? "none" : "1px solid #E8D9C4",
+            backgroundColor: activePageId === page.tracking_id ? "#C4622D" : "#FFFFFF",
+            color: activePageId === page.tracking_id ? "#FFFFFF" : "#7A5C44",
+            border: activePageId === page.tracking_id ? "none" : "1px solid #E8D9C4",
             cursor: "pointer",
           }}
-          onClick={() => setActivePage(index)}
+          onClick={() => setActivePage(page.tracking_id)}
         >
-          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13 }}>{page}</span>
+          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13 }}>{page.nom}</span>
           {pages.length > 1 && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                if (index !== pages.length - 1 || pages.length === 1) deletePage(index);
-                else deletePage(index);
+                deletePage(page.tracking_id);
               }}
               style={{
                 background: "none",
                 border: "none",
-                color: activePage === index ? "#FFFFFF" : "#7A5C44",
+                color: activePageId === page.tracking_id ? "#FFFFFF" : "#7A5C44",
                 cursor: "pointer",
               }}
             >
-              <IconClose color={activePage === index ? "#FFFFFF" : "#7A5C44"} />
+              <IconClose color={activePageId === page.tracking_id ? "#FFFFFF" : "#7A5C44"} />
             </button>
           )}
         </div>
@@ -965,6 +1064,8 @@ function CanvasArea({
   onDelete,
   onDuplicate,
   onMove,
+  loading,
+  error,
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: "canvas" });
   return (
@@ -983,18 +1084,44 @@ function CanvasArea({
       }}
       id="canvas-frame"
     >
-      <SortableContext items={components.map((c) => c.id)} strategy={rectSortingStrategy}>
+      {(loading || error) && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "rgba(251,244,233,0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 5,
+            flexDirection: "column",
+            gap: 8,
+          }}
+        >
+          {loading ? (
+            <>
+              <Loader size={32} />
+              <div style={{ color: "#7A5C44", fontFamily: "'DM Sans', sans-serif" }}>
+                Syncing interface...
+              </div>
+            </>
+          ) : (
+            <div style={{ color: "#B03030", fontFamily: "'DM Sans', sans-serif" }}>{error}</div>
+          )}
+        </div>
+      )}
+      <SortableContext items={components.map((c) => c.tracking_id)} strategy={rectSortingStrategy}>
         {components.length > 0 ? (
           components.map((component) => (
             <CanvasItem
-              key={component.id}
+              key={component.tracking_id}
               component={component}
-              isSelected={selectedId === component.id}
-              onSelect={() => onSelect(component.id)}
-              onDelete={() => onDelete(component.id)}
-              onDuplicate={() => onDuplicate(component.id)}
-              onMoveUp={() => onMove(component.id, "up")}
-              onMoveDown={() => onMove(component.id, "down")}
+              isSelected={selectedId === component.tracking_id}
+              onSelect={() => onSelect(component.tracking_id)}
+              onDelete={() => onDelete(component.tracking_id)}
+              onDuplicate={() => onDuplicate(component.tracking_id)}
+              onMoveUp={() => onMove(component.tracking_id, "up")}
+              onMoveDown={() => onMove(component.tracking_id, "down")}
             />
           ))
         ) : (
@@ -1015,7 +1142,7 @@ function CanvasItem({
   onMoveDown,
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: component.id,
+    id: component.tracking_id,
   });
 
   const style = {
@@ -1524,8 +1651,18 @@ function PropertiesPanel({ component, updateProps }) {
   );
 }
 
-function TablesTab({ selectedTable, setSelectedTable, mockTables }) {
-  const list = Object.keys(mockTables);
+function TablesTab({
+  selectedTableId,
+  setSelectedTableId,
+  tables,
+  fieldsByTable,
+  loading,
+  error,
+  onAddField,
+  onToggleRequired,
+  onDeleteField,
+}) {
+  const list = tables || [];
   return (
     <div style={{ display: "flex", height: "100%", width: "100%" }}>
       <div
@@ -1561,8 +1698,8 @@ function TablesTab({ selectedTable, setSelectedTable, mockTables }) {
         </div>
         {list.map((table) => (
           <div
-            key={table}
-            onClick={() => setSelectedTable(table)}
+            key={table.tracking_id}
+            onClick={() => setSelectedTableId(table.tracking_id)}
             style={{
               display: "flex",
               alignItems: "center",
@@ -1570,87 +1707,102 @@ function TablesTab({ selectedTable, setSelectedTable, mockTables }) {
               padding: "12px 16px",
               cursor: "pointer",
               borderLeft:
-                selectedTable === table ? "3px solid #C4622D" : "3px solid transparent",
-              backgroundColor: selectedTable === table ? "#FFF0E8" : "transparent",
+                selectedTableId === table.tracking_id ? "3px solid #C4622D" : "3px solid transparent",
+              backgroundColor: selectedTableId === table.tracking_id ? "#FFF0E8" : "transparent",
             }}
           >
             <IconTable color="#C4622D" />
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14 }}>{table}</span>
+              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14 }}>{table.name}</span>
               <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#7A5C44" }}>
-                {mockTables[table].length} fields
+                {(fieldsByTable[table.tracking_id] || []).length} fields
               </span>
             </div>
           </div>
         ))}
       </div>
       <div style={{ flex: 1, padding: 32, overflowY: "auto" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 20,
-          }}
-        >
-          <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 28 }}>
-            {selectedTable}
-          </span>
-          <button
-            style={{
-              backgroundColor: "#C4622D",
-              border: "none",
-              color: "#FFFFFF",
-              borderRadius: 6,
-              padding: "6px 12px",
-              fontFamily: "'DM Sans', sans-serif",
-              cursor: "pointer",
-            }}
-          >
-            + Add Field
-          </button>
-        </div>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'DM Sans', sans-serif" }}>
-          <thead>
-            <tr style={{ backgroundColor: "#FBF4E9" }}>
-              {["Field Name", "Type", "Required", "Default", "Actions"].map((h) => (
-                <th
-                  key={h}
-                  style={{
-                    textAlign: "left",
-                    padding: "10px 12px",
-                    fontSize: 12,
-                    color: "#7A5C44",
-                  }}
-                >
-                  {h}
-                </th>
+        {loading && <div style={{ color: "#7A5C44" }}>Loading schema...</div>}
+        {error && <div style={{ color: "#B03030" }}>{error}</div>}
+        {!selectedTableId && !loading && (
+          <div style={{ color: "#7A5C44" }}>Select a table to view fields.</div>
+        )}
+        {selectedTableId && (
+          <>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 20,
+              }}
+            >
+              <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 28 }}>
+                {list.find((t) => t.tracking_id === selectedTableId)?.name}
+              </span>
+              <button
+                onClick={onAddField}
+                style={{
+                  backgroundColor: "#C4622D",
+                  border: "none",
+                  color: "#FFFFFF",
+                  borderRadius: 6,
+                  padding: "6px 12px",
+                  fontFamily: "'DM Sans', sans-serif",
+                  cursor: "pointer",
+                }}
+              >
+                + Add Field
+              </button>
+            </div>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'DM Sans', sans-serif" }}>
+              <thead>
+                <tr style={{ backgroundColor: "#FBF4E9" }}>
+                  {["Field Name", "Type", "Required", "Default", "Actions"].map((h) => (
+                    <th
+                      key={h}
+                      style={{
+                        textAlign: "left",
+                        padding: "10px 12px",
+                        fontSize: 12,
+                        color: "#7A5C44",
+                      }}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(fieldsByTable[selectedTableId] || []).map((field) => (
+                  <tr key={field.id} style={{ borderBottom: "1px solid #F0E6D8" }}>
+                    <td style={{ padding: "10px 12px" }}>{field.name}</td>
+                    <td style={{ padding: "10px 12px" }}>
+                      <TypeBadge type={field.type} />
+                    </td>
+                    <td style={{ padding: "10px 12px" }}>
+                    <TogglePill
+                      label={field.required ? "Yes" : "No"}
+                      active={field.required}
+                      onClick={() => onToggleRequired(field)}
+                    />
+                  </td>
+                  <td style={{ padding: "10px 12px", color: "#7A5C44" }}>{field.default}</td>
+                  <td style={{ padding: "10px 12px", display: "flex", gap: 10 }}>
+                    <IconEdit color="#7A5C44" />
+                    <button
+                      onClick={() => onDeleteField(field)}
+                      style={{ background: "none", border: "none", cursor: "pointer" }}
+                    >
+                      <IconTrash color="#B03030" />
+                    </button>
+                  </td>
+                </tr>
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {mockTables[selectedTable].map((field) => (
-              <tr key={field.id} style={{ borderBottom: "1px solid #F0E6D8" }}>
-                <td style={{ padding: "10px 12px" }}>{field.name}</td>
-                <td style={{ padding: "10px 12px" }}>
-                  <TypeBadge type={field.type} />
-                </td>
-                <td style={{ padding: "10px 12px" }}>
-                  <TogglePill
-                    label={field.required ? "Yes" : "No"}
-                    active={field.required}
-                    onClick={() => {}}
-                  />
-                </td>
-                <td style={{ padding: "10px 12px", color: "#7A5C44" }}>{field.default}</td>
-                <td style={{ padding: "10px 12px", display: "flex", gap: 10 }}>
-                  <IconEdit color="#7A5C44" />
-                  <IconTrash color="#B03030" />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+              </tbody>
+            </table>
+          </>
+        )}
       </div>
     </div>
   );
@@ -1682,7 +1834,7 @@ function TypeBadge({ type }) {
   );
 }
 
-function WorkflowsTab({ workflows, openModal }) {
+function WorkflowsTab({ workflows, loading, error, onCreate, onToggle, onDelete }) {
   return (
     <div style={{ flex: 1, padding: 32, overflowY: "auto" }}>
       <div
@@ -1695,7 +1847,7 @@ function WorkflowsTab({ workflows, openModal }) {
       >
         <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 28 }}>Workflows</span>
         <button
-          onClick={openModal}
+          onClick={onCreate}
           style={{
             backgroundColor: "#C4622D",
             border: "none",
@@ -1709,10 +1861,12 @@ function WorkflowsTab({ workflows, openModal }) {
           + New Workflow
         </button>
       </div>
+      {loading && <div style={{ color: "#7A5C44" }}>Loading workflows...</div>}
+      {error && <div style={{ color: "#B03030" }}>{error}</div>}
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {workflows.map((wf) => (
           <div
-            key={wf.name}
+            key={wf.tracking_id}
             style={{
               backgroundColor: "#FFFFFF",
               borderRadius: 12,
@@ -1738,14 +1892,19 @@ function WorkflowsTab({ workflows, openModal }) {
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 600 }}>
-                {wf.name}
+                {wf.nom}
               </div>
-              <div style={{ color: "#7A5C44", fontFamily: "'DM Sans', sans-serif" }}>{wf.summary}</div>
+              <div style={{ color: "#7A5C44", fontFamily: "'DM Sans', sans-serif" }}>{wf.description}</div>
             </div>
-            <TogglePill label={wf.active ? "Active" : "Inactive"} active={wf.active} onClick={() => {}} />
+            <TogglePill label={wf.actif ? "Active" : "Inactive"} active={wf.actif} onClick={() => onToggle(wf)} />
             <div style={{ display: "flex", gap: 10 }}>
               <IconEdit color="#7A5C44" />
-              <IconTrash color="#B03030" />
+              <button
+                onClick={() => onDelete(wf)}
+                style={{ background: "none", border: "none", cursor: "pointer" }}
+              >
+                <IconTrash color="#B03030" />
+              </button>
             </div>
           </div>
         ))}
@@ -2128,6 +2287,10 @@ function TypingDots() {
 
 // ───────────────────── RENDER PREVIEWS ────────────────────────
 function renderComponentPreview(component) {
+  // backend returns config; props are stored inside config.props
+  if (component.config?.props && !component.props) {
+    component = { ...component, props: component.config.props };
+  }
   const commonBox = {
     borderRadius: component.props.radius || 8,
     backgroundColor: component.props.background || "transparent",

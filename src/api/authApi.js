@@ -1,37 +1,15 @@
-import axios from './axios';
+import axios from "./axios";
 
 export const authApi = {
-  login: async (email, password) => {
-    // En production, utiliser une vraie API
-    // return axios.post('/auth/login', { email, password });
-    return { data: { user: { email }, token: 'mock-token' } };
-  },
+  login: (email, password) => axios.post("/auth/login", { email, password }),
 
-  register: async (userData) => {
-    // En production, utiliser une vraie API
-    // return axios.post('/auth/register', userData);
-    return { data: { user: userData, token: 'mock-token' } };
-  },
+  registerFree: (payload) => axios.post("/auth/register/free", payload),
 
-  logout: async () => {
-    localStorage.removeItem('authToken');
-    return { data: { success: true } };
-  },
+  registerEnterprise: (payload) => axios.post("/auth/register/enterprise", payload),
 
-  verifyEmail: async (token) => {
-    // return axios.post('/auth/verify-email', { token });
-    return { data: { verified: true } };
-  },
+  refresh: (refresh_token) => axios.post("/auth/refresh", { refresh_token }),
 
-  resetPassword: async (email) => {
-    // return axios.post('/auth/reset-password', { email });
-    return { data: { sent: true } };
-  },
-
-  changePassword: async (oldPassword, newPassword) => {
-    // return axios.post('/auth/change-password', { oldPassword, newPassword });
-    return { data: { success: true } };
-  }
+  me: () => axios.get("/auth/me"),
 };
 
 export default authApi;
