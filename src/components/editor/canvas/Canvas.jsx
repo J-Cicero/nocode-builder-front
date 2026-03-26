@@ -1,99 +1,161 @@
 import { useState } from "react";
-import Button from "../../common/Button";
 
-const MOCK_CANVAS_ITEMS = [
+const MOCK_ITEMS = [
   { id: "c1", type: "title", label: "Welcome to My App" },
-  { id: "c2", type: "text", label: "This is a beautiful interface" },
-  { id: "c3", type: "button", label: "Click Me", color: "#C4622D" },
+  { id: "c2", type: "text", label: "Drag components from the left to build your page." },
+  { id: "c3", type: "button", label: "Get Started", color: "#C4622D" },
 ];
 
 export default function Canvas() {
-  const [pages, setPages] = useState(["Page 1", "Page 2"]);
+  const [pages, setPages] = useState(["Home", "Products"]);
   const [activePage, setActivePage] = useState(0);
-  const [canvasItems, setCanvasItems] = useState(MOCK_CANVAS_ITEMS);
+  const [items] = useState(MOCK_ITEMS);
 
-  const addPage = () => {
-    const newPageName = `Page ${pages.length + 1}`;
-    setPages([...pages, newPageName]);
+  const addPage = () => setPages((p) => [...p, `Page ${p.length + 1}`]);
+
+  const tabBtn = (label, idx) => {
+    const active = activePage === idx;
+    return (
+      <button
+        key={label}
+        onClick={() => setActivePage(idx)}
+        style={{
+          padding: "10px 16px",
+          borderRadius: 20,
+          border: `1.5px solid ${active ? "#C4622D" : "#E8D9C4"}`,
+          backgroundColor: active ? "#C4622D" : "#FFFFFF",
+          color: active ? "#FFFFFF" : "#7A5C44",
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: 14,
+          cursor: "pointer",
+          transition: "all 150ms ease",
+        }}
+        onMouseEnter={(e) => !active && (e.currentTarget.style.borderColor = "#C4622D")}
+        onMouseLeave={(e) => !active && (e.currentTarget.style.borderColor = "#E8D9C4")}
+      >
+        {label}
+      </button>
+    );
   };
 
   return (
-    <div className="flex-1 bg-gradient-to-br from-white via-bg to-[#f1e2d2] flex flex-col">
-      {/* Pages tabs */}
-      <div className="flex items-center gap-2 px-6 py-4 border-b border-border/80 bg-white/80 backdrop-blur">
-        {pages.map((page, idx) => (
-          <button
-            key={idx}
-            onClick={() => setActivePage(idx)}
-            className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-              activePage === idx
-                ? "bg-primary text-white shadow-md shadow-primary/30"
-                : "bg-white border border-border text-text-muted hover:text-text"
-            }`}
-          >
-            {page}
-          </button>
-        ))}
+    <div style={{ flex: 1, backgroundColor: "#E8DDD0", display: "flex", flexDirection: "column", alignItems: "center", padding: 24, overflow: "auto" }}>
+      <div style={{ display: "flex", gap: 8, alignSelf: "stretch", marginBottom: 20 }}>
+        {pages.map((p, i) => tabBtn(p, i))}
         <button
           onClick={addPage}
-          className="px-3 py-2 text-text-muted hover:text-text transition-colors text-sm font-semibold"
+          style={{
+            padding: "10px 14px",
+            borderRadius: 20,
+            border: "1.5px dashed #E8D9C4",
+            background: "transparent",
+            color: "#7A5C44",
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 14,
+            cursor: "pointer",
+          }}
         >
-          + Page
+          + Add Page
         </button>
       </div>
 
-      {/* Canvas area */}
-      <div className="flex-1 flex items-center justify-center p-6 overflow-y-auto">
-        <div className="relative">
-          <div className="absolute -inset-6 bg-gradient-to-r from-primary/12 via-secondary/10 to-green/10 blur-3xl rounded-3xl pointer-events-none" />
-          <div className="relative bg-white/90 border border-border/80 rounded-[32px] shadow-2xl shadow-primary/10" style={{ width: "390px", minHeight: "640px" }}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border/70 bg-white/80 rounded-t-[32px]">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-green-500" />
-                <p className="text-xs text-text-muted uppercase tracking-[0.2em]">Aperçu mobile</p>
-              </div>
-              <span className="px-3 py-1 rounded-full bg-bg text-xs font-semibold text-text">Page {activePage + 1}</span>
+      <div style={{ position: "relative" }}>
+        <div
+          style={{
+            position: "absolute",
+            inset: -24,
+            background: "linear-gradient(90deg, rgba(196,98,45,0.12), rgba(212,160,23,0.10), rgba(45,90,27,0.08))",
+            filter: "blur(30px)",
+            borderRadius: 30,
+            pointerEvents: "none",
+          }}
+        />
+        <div
+          style={{
+            position: "relative",
+            width: 375,
+            minHeight: 600,
+            backgroundColor: "#FFFFFF",
+            borderRadius: 16,
+            boxShadow: "0 8px 40px rgba(26,14,10,0.2)",
+            overflow: "hidden",
+            border: "1px solid #E8D9C4",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid #E8D9C4", backgroundColor: "#FFFFFF" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#1E6B3C" }} />
+              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#7A5C44", letterSpacing: "2px", textTransform: "uppercase" }}>
+                Mobile Preview
+              </span>
             </div>
-
-            {canvasItems.length > 0 ? (
-              <div className="p-6 space-y-4">
-                {canvasItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="relative p-4 bg-bg rounded-xl border border-border hover:border-primary transition-colors cursor-pointer group"
-                  >
-                    {item.type === "title" && (
-                      <h3 className="font-playfair-display font-bold text-lg text-text">
-                        {item.label}
-                      </h3>
-                    )}
-                    {item.type === "text" && (
-                      <p className="text-text-muted text-sm">{item.label}</p>
-                    )}
-                    {item.type === "button" && (
-                      <button
-                        className="px-4 py-2 rounded-lg text-white text-sm font-medium shadow-md"
-                        style={{ backgroundColor: item.color }}
-                      >
-                        {item.label}
-                      </button>
-                    )}
-                    <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                      <button className="p-1 bg-primary text-white rounded text-xs shadow-sm">✎</button>
-                      <button className="p-1 bg-error text-white rounded text-xs shadow-sm">✕</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="h-96 flex flex-col items-center justify-center text-text-muted">
-                <svg className="w-12 h-12 mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
-                </svg>
-                <p className="text-center text-sm">Déposez des composants ici</p>
-              </div>
-            )}
+            <span style={{ padding: "4px 10px", borderRadius: 12, backgroundColor: "#FBF4E9", fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#2C1A0E" }}>
+              Page {activePage + 1}
+            </span>
           </div>
+
+          {items.length ? (
+            <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+              {items.map((item) => (
+                <div
+                  key={item.id}
+                  style={{
+                    position: "relative",
+                    padding: 12,
+                    borderRadius: 12,
+                    border: "1px solid #E8D9C4",
+                    backgroundColor: "#FBF4E9",
+                    cursor: "pointer",
+                  }}
+                >
+                  {item.type === "title" && (
+                    <h3 style={{ margin: 0, fontFamily: "'Playfair Display', serif", fontSize: 18, color: "#2C1A0E" }}>
+                      {item.label}
+                    </h3>
+                  )}
+                  {item.type === "text" && (
+                    <p style={{ margin: 0, fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#7A5C44" }}>
+                      {item.label}
+                    </p>
+                  )}
+                  {item.type === "button" && (
+                    <button
+                      style={{
+                        padding: "10px 16px",
+                        borderRadius: 10,
+                        border: "none",
+                        backgroundColor: item.color,
+                        color: "#FFFFFF",
+                        fontFamily: "'DM Sans', sans-serif",
+                        fontSize: 14,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  )}
+
+                  <div style={{ position: "absolute", top: 8, right: 8, display: "flex", gap: 6, opacity: 0, transition: "opacity 150ms ease" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.opacity = 1)}
+                    onMouseLeave={(e) => (e.currentTarget.style.opacity = 0)}
+                  >
+                    <button style={{ padding: 6, borderRadius: 6, border: "none", backgroundColor: "#C4622D", color: "#FFFFFF", cursor: "pointer" }}>✎</button>
+                    <button style={{ padding: 6, borderRadius: 6, border: "none", backgroundColor: "#B03030", color: "#FFFFFF", cursor: "pointer" }}>✕</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ height: 400, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, padding: 20 }}>
+              <div style={{ border: "2px dashed #E8D9C4", borderRadius: 12, padding: 24, width: "90%", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#E8D9C4" strokeWidth="2">
+                  <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+                </svg>
+                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#B09070" }}>Drag components here</div>
+                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#C4C4C4" }}>to build your page</div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -2,100 +2,117 @@ import { useState } from "react";
 import Input from "../../common/Input";
 
 export default function PropertiesPanel() {
-  const [selectedComponent, setSelectedComponent] = useState(null);
+  const [selected] = useState(true); // mock: pretend something is selected
   const [properties, setProperties] = useState({
-    label: "",
-    bgColor: "#FFFFFF",
-    textColor: "#2C1A0E"
+    label: "Button CTA",
+    bgColor: "#C4622D",
+    textColor: "#FFFFFF",
   });
 
-  const handlePropertyChange = (key, value) => {
-    setProperties(prev => ({
-      ...prev,
-      [key]: value
-    }));
+  const handleChange = (key, value) => setProperties((p) => ({ ...p, [key]: value }));
+
+  const headerStyle = {
+    padding: 16,
+    borderBottom: "1px solid #E8D9C4",
+    position: "sticky",
+    top: 0,
+    backgroundColor: "#FFFFFF",
+    zIndex: 1,
   };
 
-  if (!selectedComponent) {
+  if (!selected) {
     return (
-      <div className="w-72 border-l border-border/70 bg-white/85 backdrop-blur-md flex items-center justify-center text-text-muted text-sm text-center p-6">
-        <p>Sélectionnez un élément pour éditer ses propriétés</p>
+      <div style={{ width: 260, backgroundColor: "#FFFFFF", borderLeft: "1px solid #E8D9C4", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 24 }}>
+        <div>
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#E8D9C4" strokeWidth="2" style={{ margin: "0 auto" }}>
+            <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+          </svg>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#B09070", marginTop: 12 }}>Select a component to edit its properties</p>
+        </div>
       </div>
     );
   }
 
+  const sectionLabel = (text) => (
+    <div style={{ padding: "10px 16px", backgroundColor: "#FBF4E9", fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 700, color: "#7A5C44", letterSpacing: "1px" }}>
+      {text}
+    </div>
+  );
+
   return (
-    <div className="w-72 border-l border-border/70 bg-white/85 overflow-y-auto backdrop-blur-md">
-      {/* Header */}
-      <div className="sticky top-0 bg-white/90 border-b border-border/70 p-4">
-        <h3 className="font-bold text-text">Propriétés</h3>
-        <p className="text-xs text-text-muted">Affinez le style et les couleurs</p>
+    <div style={{ width: 260, backgroundColor: "#FFFFFF", borderLeft: "1px solid #E8D9C4", overflowY: "auto", flexShrink: 0 }}>
+      <div style={headerStyle}>
+        <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 600, color: "#2C1A0E" }}>Properties</div>
       </div>
 
-      {/* Properties form */}
-      <div className="p-4 space-y-4">
+      {sectionLabel("CONTENT")}
+      <div style={{ padding: "10px 16px" }}>
         <Input
           label="Label"
-          placeholder="Component label"
           value={properties.label}
-          onChange={(e) => handlePropertyChange("label", e.target.value)}
+          onChange={(e) => handleChange("label", e.target.value)}
         />
+      </div>
 
-        <div>
-          <label className="block text-sm font-medium text-text mb-2 font-dm-sans">
-            Background Color
-          </label>
-          <div className="flex items-center gap-2">
-            <input
-              type="color"
-              value={properties.bgColor}
-              onChange={(e) => handlePropertyChange("bgColor", e.target.value)}
-              className="w-12 h-10 rounded cursor-pointer"
-            />
-            <input
-              type="text"
-              value={properties.bgColor}
-              onChange={(e) => handlePropertyChange("bgColor", e.target.value)}
-              className="flex-1 px-3 py-2 rounded-lg border border-border focus:border-primary focus:outline-none font-dm-sans text-sm"
-              placeholder="#FFFFFF"
-            />
-          </div>
+      {sectionLabel("STYLE")}
+      <div style={{ padding: "10px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <label style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#7A5C44" }}>Background</label>
+          <input
+            type="color"
+            value={properties.bgColor}
+            onChange={(e) => handleChange("bgColor", e.target.value)}
+            style={{ width: "100%", height: 36, border: "1px solid #E8D9C4", borderRadius: 8, cursor: "pointer" }}
+          />
         </div>
-
-        <div>
-          <label className="block text-sm font-medium text-text mb-2 font-dm-sans">
-            Text Color
-          </label>
-          <div className="flex items-center gap-2">
-            <input
-              type="color"
-              value={properties.textColor}
-              onChange={(e) => handlePropertyChange("textColor", e.target.value)}
-              className="w-12 h-10 rounded cursor-pointer"
-            />
-            <input
-              type="text"
-              value={properties.textColor}
-              onChange={(e) => handlePropertyChange("textColor", e.target.value)}
-              className="flex-1 px-3 py-2 rounded-lg border border-border focus:border-primary focus:outline-none font-dm-sans text-sm"
-              placeholder="#2C1A0E"
-            />
-          </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <label style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#7A5C44" }}>Text Color</label>
+          <input
+            type="color"
+            value={properties.textColor}
+            onChange={(e) => handleChange("textColor", e.target.value)}
+            style={{ width: "100%", height: 36, border: "1px solid #E8D9C4", borderRadius: 8, cursor: "pointer" }}
+          />
         </div>
+      </div>
 
-        {/* Preview */}
-        <div className="mt-6 pt-4 border-t border-border">
-          <p className="text-xs font-medium text-text-muted mb-2">Preview</p>
-          <div
-            className="p-4 rounded-lg text-center shadow-inner"
-            style={{
-              backgroundColor: properties.bgColor,
-              color: properties.textColor,
-              border: `2px solid ${properties.bgColor}`
-            }}
-          >
-            {properties.label || "Preview"}
-          </div>
+      {sectionLabel("DATA")}
+      <div style={{ padding: "10px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+        <label style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#7A5C44" }}>
+          Bind to field
+        </label>
+        <select
+          style={{
+            padding: "10px 12px",
+            border: "1.5px solid #E8D9C4",
+            borderRadius: 8,
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 13,
+            outline: "none",
+            cursor: "pointer",
+          }}
+        >
+          <option>Not bound</option>
+          <option>Name</option>
+          <option>Email</option>
+        </select>
+      </div>
+
+      <div style={{ padding: "16px" }}>
+        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#B09070", marginBottom: 8 }}>Preview</p>
+        <div
+          style={{
+            padding: "12px 16px",
+            textAlign: "center",
+            borderRadius: 10,
+            border: "1px dashed #E8D9C4",
+            backgroundColor: properties.bgColor,
+            color: properties.textColor,
+            fontFamily: "'DM Sans', sans-serif",
+            fontWeight: 600,
+          }}
+        >
+          {properties.label}
         </div>
       </div>
     </div>

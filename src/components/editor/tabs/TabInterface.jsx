@@ -4,14 +4,9 @@ import PropertiesPanel from "../canvas/PropertiesPanel";
 
 export default function TabInterface() {
   return (
-    <div className="flex h-full">
-      {/* Left: Components library */}
+    <div style={{ display: "flex", height: "100%" }}>
       <ComponentPanel />
-
-      {/* Center: Canvas */}
       <Canvas />
-
-      {/* Right: Properties */}
       <PropertiesPanel />
     </div>
   );

@@ -3,112 +3,101 @@ import Button from "../../common/Button";
 import Modal from "../../common/Modal";
 
 const MOCK_WORKFLOWS = [
-  {
-    id: "w1",
-    name: "Welcome Email",
-    active: true,
-    trigger: "Users created",
-    action: "Send email"
-  },
-  {
-    id: "w2",
-    name: "Low Stock Alert",
-    active: false,
-    trigger: "Products updated",
-    action: "Send SMS"
-  }
+  { id: "w1", name: "Welcome Email", summary: "When Users is created → Send email", active: true },
+  { id: "w2", name: "Low Stock Alert", summary: "When Products is updated → Send notification", active: true },
+  { id: "w3", name: "Order Confirmation", summary: "When Orders is created → Send email", active: false },
 ];
 
 export default function TabWorkflows() {
   const [workflows, setWorkflows] = useState(MOCK_WORKFLOWS);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState({
-    trigger: "",
-    condition: "",
-    action: ""
-  });
+  const [isOpen, setIsOpen] = useState(false);
+  const [step, setStep] = useState(1);
+  const [form, setForm] = useState({ table: "", event: "", condition: "", action: "" });
 
-  const toggleWorkflow = (id) => {
-    setWorkflows(workflows.map(w =>
-      w.id === id ? { ...w, active: !w.active } : w
-    ));
+  const toggle = (id) => setWorkflows((w) => w.map((wf) => wf.id === id ? { ...wf, active: !wf.active } : wf));
+
+  const stepperDot = (idx) => {
+    const state = idx < step ? "#2D5A1B" : idx === step ? "#C4622D" : "#E8D9C4";
+    return (
+      <div key={idx} style={{ display: "flex", alignItems: "center" }}>
+        <div style={{ width: 16, height: 16, borderRadius: "50%", backgroundColor: state }} />
+        {idx < 3 && <div style={{ width: 28, height: 2, backgroundColor: "#E8D9C4", margin: "0 6px" }} />}
+      </div>
+    );
   };
 
-  const handleNextStep = () => {
-    if (currentStep < 3) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const handlePrevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  const handleSaveWorkflow = () => {
-    // In a real app, we'd save this to state
-    setIsModalOpen(false);
-    setCurrentStep(1);
-    setFormData({ trigger: "", condition: "", action: "" });
-  };
+  const toggleSwitch = (active) => (
+    <button
+      style={{
+        position: "relative",
+        width: 44,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: active ? "#2D5A1B" : "#E8D9C4",
+        border: "none",
+        cursor: "pointer",
+        transition: "background-color 150ms ease",
+      }}
+    >
+      <span
+        style={{
+          position: "absolute",
+          top: 2,
+          left: active ? 22 : 2,
+          width: 20,
+          height: 20,
+          borderRadius: "50%",
+          backgroundColor: "#FFFFFF",
+          transition: "left 150ms ease",
+        }}
+      />
+    </button>
+  );
 
   return (
-    <div className="h-full bg-bg p-6 overflow-y-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <h2 className="text-2xl font-playfair-display font-bold text-text">Workflows</h2>
-        <Button
-          variant="primary"
-          onClick={() => setIsModalOpen(true)}
-        >
-          + New Workflow
-        </Button>
+    <div style={{ flex: 1, padding: 32, overflowY: "auto", backgroundColor: "#FBF4E9" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 32 }}>
+        <h2 style={{ margin: 0, fontFamily: "'Playfair Display', serif", fontSize: 28, color: "#2C1A0E" }}>Workflows</h2>
+        <Button variant="primary" onClick={() => { setIsOpen(true); setStep(1); }}>+ New Workflow</Button>
       </div>
 
-      {/* Workflows grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {workflows.map((workflow) => (
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {workflows.map((wf) => (
           <div
-            key={workflow.id}
-            className="bg-white rounded-lg p-6 border border-border hover:shadow-lg transition-shadow"
+            key={wf.id}
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderRadius: 12,
+              padding: "20px 24px",
+              boxShadow: "0 2px 8px rgba(44,26,14,0.06)",
+              display: "flex",
+              alignItems: "center",
+              gap: 16,
+            }}
           >
-            {/* Icon and active toggle */}
-            <div className="flex items-start justify-between mb-4">
-              <div className="text-2xl">⚡</div>
-              <button
-                onClick={() => toggleWorkflow(workflow.id)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  workflow.active ? "bg-primary" : "bg-border"
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform ${
-                    workflow.active ? "translate-x-6" : "translate-x-1"
-                  }`}
-                />
-              </button>
+            <div style={{ width: 44, height: 44, borderRadius: 10, backgroundColor: "#FFF0E8", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C4622D" strokeWidth="2">
+                <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </div>
-
-            {/* Name */}
-            <h3 className="font-playfair-display font-bold text-lg text-text mb-2">
-              {workflow.name}
-            </h3>
-
-            {/* Description */}
-            <p className="text-sm text-text-muted mb-4">
-              When <strong>{workflow.trigger}</strong> → {workflow.action}
-            </p>
-
-            {/* Actions */}
-            <div className="flex gap-2">
-              <button className="flex-1 px-3 py-2 bg-bg hover:bg-primary hover:text-white rounded-lg transition-colors text-sm font-medium text-text border border-border">
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 600, color: "#2C1A0E" }}>{wf.name}</div>
+              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#7A5C44", marginTop: 4 }}>{wf.summary}</div>
+            </div>
+            {toggleSwitch(wf.active)}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button style={{ border: "1px solid #E8D9C4", background: "transparent", borderRadius: 6, padding: "6px 10px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: 12 }}>
                 Edit
               </button>
-              <button className="px-3 py-2 bg-red-100 hover:bg-red-200 text-error rounded-lg transition-colors">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              <button
+                style={{ border: "1px solid #E8D9C4", background: "transparent", borderRadius: 6, padding: 6, cursor: "pointer" }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#FFF5F5"; e.currentTarget.style.borderColor = "#B03030"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.borderColor = "#E8D9C4"; }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#B03030" strokeWidth="2">
+                  <path d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7" strokeLinecap="round" />
+                  <path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" strokeLinecap="round" />
+                  <path d="M4 7h16" strokeLinecap="round" />
                 </svg>
               </button>
             </div>
@@ -116,56 +105,29 @@ export default function TabWorkflows() {
         ))}
       </div>
 
-      {/* Create Workflow Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create New Workflow">
-        {/* Stepper */}
-        <div className="flex items-center justify-between mb-8">
-          {[1, 2, 3].map((step) => (
-            <div key={step} className="flex items-center">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
-                  step <= currentStep
-                    ? "bg-primary text-white"
-                    : "bg-border text-text-muted"
-                }`}
-              >
-                {step}
-              </div>
-              {step < 3 && (
-                <div
-                  className={`h-1 w-12 mx-2 transition-colors ${
-                    step < currentStep ? "bg-primary" : "bg-border"
-                  }`}
-                />
-              )}
-            </div>
-          ))}
+      <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="New Workflow">
+        <div style={{ display: "flex", justifyContent: "center", gap: 0, marginBottom: 24 }}>
+          {[1, 2, 3].map((n) => stepperDot(n))}
         </div>
 
-        {/* Steps */}
-        {currentStep === 1 && (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-text mb-2 font-dm-sans">
-                Trigger Table
-              </label>
+        {step === 1 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <label style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#7A5C44" }}>When this happens...</label>
+            <div style={{ display: "flex", gap: 12 }}>
               <select
-                value={formData.trigger}
-                onChange={(e) => setFormData({ ...formData, trigger: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg border-2 border-border focus:border-primary focus:outline-none bg-white font-dm-sans"
+                value={form.table}
+                onChange={(e) => setForm({ ...form, table: e.target.value })}
+                style={{ flex: 1, padding: "12px 14px", border: "1.5px solid #E8D9C4", borderRadius: 8, fontFamily: "'DM Sans', sans-serif", fontSize: 14, outline: "none" }}
               >
                 <option value="">Select table</option>
-                <option value="users">Users</option>
-                <option value="products">Products</option>
-                <option value="orders">Orders</option>
+                <option value="Users">Users</option>
+                <option value="Products">Products</option>
+                <option value="Orders">Orders</option>
               </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-text mb-2 font-dm-sans">
-                Event
-              </label>
               <select
-                className="w-full px-4 py-2.5 rounded-lg border-2 border-border focus:border-primary focus:outline-none bg-white font-dm-sans"
+                value={form.event}
+                onChange={(e) => setForm({ ...form, event: e.target.value })}
+                style={{ flex: 1, padding: "12px 14px", border: "1.5px solid #E8D9C4", borderRadius: 8, fontFamily: "'DM Sans', sans-serif", fontSize: 14, outline: "none" }}
               >
                 <option value="">Select event</option>
                 <option value="created">Created</option>
@@ -176,59 +138,73 @@ export default function TabWorkflows() {
           </div>
         )}
 
-        {currentStep === 2 && (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-text mb-2 font-dm-sans">
-                Condition (Optional)
-              </label>
-              <textarea
-                value={formData.condition}
-                onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg border-2 border-border focus:border-primary focus:outline-none bg-white font-dm-sans resize-none"
-                rows="3"
-                placeholder="e.g., if quantity < 100"
+        {step === 2 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <label style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#7A5C44" }}>Only if...</label>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <select style={{ flex: 1, minWidth: 140, padding: "12px 14px", border: "1.5px solid #E8D9C4", borderRadius: 8 }}>
+                <option>Field</option>
+                <option>status</option>
+                <option>quantity</option>
+              </select>
+              <select style={{ flex: 1, minWidth: 140, padding: "12px 14px", border: "1.5px solid #E8D9C4", borderRadius: 8 }}>
+                <option>equals</option>
+                <option>not equals</option>
+                <option>contains</option>
+                <option>greater than</option>
+              </select>
+              <input
+                style={{ flex: 1, minWidth: 160, padding: "12px 14px", border: "1.5px solid #E8D9C4", borderRadius: 8, fontFamily: "'DM Sans', sans-serif" }}
+                placeholder="Value"
               />
             </div>
+            <button
+              type="button"
+              style={{ background: "transparent", border: "none", color: "#C4622D", fontFamily: "'DM Sans', sans-serif", fontSize: 13, cursor: "pointer" }}
+            >
+              + Add condition
+            </button>
           </div>
         )}
 
-        {currentStep === 3 && (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-text mb-2 font-dm-sans">
-                Action
-              </label>
-              <select
-                value={formData.action}
-                onChange={(e) => setFormData({ ...formData, action: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg border-2 border-border focus:border-primary focus:outline-none bg-white font-dm-sans"
-              >
-                <option value="">Select action</option>
-                <option value="email">Send Email</option>
-                <option value="sms">Send SMS</option>
-                <option value="webhook">Call Webhook</option>
-                <option value="create">Create Record</option>
-              </select>
+        {step === 3 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <label style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#7A5C44" }}>Then do this...</label>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              {["Send Email", "Send Notification", "Update Field"].map((action) => {
+                const active = form.action === action;
+                return (
+                  <button
+                    key={action}
+                    type="button"
+                    onClick={() => setForm({ ...form, action })}
+                    style={{
+                      flex: 1,
+                      minWidth: 140,
+                      padding: 12,
+                      borderRadius: 10,
+                      border: `2px solid ${active ? "#C4622D" : "#E8D9C4"}`,
+                      backgroundColor: active ? "#FFF0E8" : "#FFFFFF",
+                      fontFamily: "'DM Sans', sans-serif",
+                      fontSize: 14,
+                      color: "#2C1A0E",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {action}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
 
-        {/* Buttons */}
-        <div className="flex gap-3 justify-end pt-6 mt-6 border-t border-border">
-          {currentStep > 1 && (
-            <Button variant="ghost" onClick={handlePrevStep}>
-              Back
-            </Button>
-          )}
-          {currentStep < 3 ? (
-            <Button variant="primary" onClick={handleNextStep}>
-              Next
-            </Button>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 24 }}>
+          {step > 1 && <Button variant="ghost" onClick={() => setStep((s) => s - 1)}>Back</Button>}
+          {step < 3 ? (
+            <Button variant="primary" onClick={() => setStep((s) => s + 1)}>Next</Button>
           ) : (
-            <Button variant="primary" onClick={handleSaveWorkflow}>
-              Save Workflow
-            </Button>
+            <Button variant="primary" onClick={() => { setIsOpen(false); setStep(1); }}>Save</Button>
           )}
         </div>
       </Modal>

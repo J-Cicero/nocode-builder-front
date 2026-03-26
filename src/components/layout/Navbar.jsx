@@ -5,94 +5,154 @@ import { useAuth } from "../../store/authStore";
 export default function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef(null);
 
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsDropdownOpen(false);
+    const handler = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setOpen(false);
       }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
+  const initials = (user?.name || "User")
+    .split(" ")
+    .filter(Boolean)
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  const navStyle = {
+    height: 64,
+    backgroundColor: "#1A0E0A",
+    position: "sticky",
+    top: 0,
+    zIndex: 100,
+    padding: "0 32px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
   };
 
-  const getInitials = (name) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase();
+  const logoRow = {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
   };
+
+  const dropdownStyle = {
+    position: "absolute",
+    top: "calc(100% + 8px)",
+    right: 0,
+    backgroundColor: "#FFFFFF",
+    border: "1px solid #E8D9C4",
+    borderRadius: 8,
+    boxShadow: "0 12px 32px rgba(26,14,10,0.18)",
+    minWidth: 180,
+    zIndex: 200,
+    overflow: "hidden",
+  };
+
+  const menuItem = (color, hoverBg, onClick, label) => (
+    <button
+      onClick={onClick}
+      style={{
+        width: "100%",
+        textAlign: "left",
+        padding: "12px 16px",
+        background: "transparent",
+        border: "none",
+        color,
+        fontFamily: "'DM Sans', sans-serif",
+        fontSize: 14,
+        cursor: "pointer",
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = hoverBg)}
+      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+    >
+      {label}
+    </button>
+  );
 
   return (
-    <nav className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 border-b border-border/80">
-      <div className="max-w-7xl mx-auto h-16 px-6 flex items-center justify-between">
-        {/* Logo */}
-        <div className="flex items-center gap-3">
-          <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-primary to-primary-dark text-white font-semibold flex items-center justify-center shadow-lg shadow-primary/30">
-            BA
+    <nav style={navStyle} ref={menuRef}>
+      <div style={logoRow}>
+        <div
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 10,
+            backgroundColor: "#C4622D",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#FFFFFF",
+            fontFamily: "'Playfair Display', serif",
+            fontWeight: 700,
+            fontSize: 18,
+          }}
+        >
+          B
+        </div>
+        <div>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, color: "#D4A017", lineHeight: 1 }}>
+            BuildrAfrica
           </div>
-          <div className="leading-tight">
-            <p className="text-[10px] uppercase tracking-[0.28em] text-text-muted font-semibold">buildr</p>
-            <p className="font-playfair-display text-xl text-text">Africa Studio</p>
+          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "#A08060", letterSpacing: 1 }}>
+            No-code studio
           </div>
         </div>
+      </div>
 
-        {/* User menu */}
-        <div className="flex items-center gap-4 relative" ref={dropdownRef}>
-          <div className="hidden md:flex items-center gap-3 px-3 py-2 rounded-full bg-white/70 border border-border/70 shadow-sm">
-            <div className="w-9 h-9 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold shadow-primary/40 shadow-md">
-              {getInitials(user?.name || "User")}
-            </div>
-            <div className="text-sm text-text font-semibold">{user?.name}</div>
-          </div>
-
-          {/* Dropdown toggle */}
-          <button
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="h-10 w-10 rounded-full bg-white border border-border/80 text-text hover:shadow-md transition-all"
-          >
-            <svg
-              className={`w-4 h-4 mx-auto transition-transform ${isDropdownOpen ? "rotate-180" : ""}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-            </svg>
-          </button>
-
-          {/* Dropdown menu */}
-          {isDropdownOpen && (
-            <div className="absolute top-full right-0 mt-3 bg-white rounded-xl shadow-2xl border border-border/80 min-w-48 overflow-hidden">
-              <button
-                onClick={() => {
-                  setIsDropdownOpen(false);
-                }}
-                className="w-full text-left px-4 py-2.5 text-text hover:bg-bg transition-colors font-dm-sans"
-              >
-                Profile
-              </button>
-              <button
-                onClick={() => {
-                  setIsDropdownOpen(false);
-                  handleLogout();
-                }}
-                className="w-full text-left px-4 py-2.5 text-error hover:bg-bg transition-colors font-dm-sans"
-              >
-                Sign Out
-              </button>
-            </div>
-          )}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, position: "relative" }}>
+        <div
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: "50%",
+            backgroundColor: "#C4622D",
+            color: "#FFFFFF",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontFamily: "'DM Sans', sans-serif",
+            fontWeight: 600,
+            fontSize: 14,
+          }}
+        >
+          {initials}
         </div>
+        <div style={{ color: "#FFFFFF", fontFamily: "'DM Sans', sans-serif", fontSize: 14 }}>
+          {user?.name || "User"}
+        </div>
+        <button
+          onClick={() => setOpen(!open)}
+          style={{
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            padding: 6,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A08060" strokeWidth="2">
+            <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+
+        {open && (
+          <div style={dropdownStyle}>
+            {menuItem("#2C1A0E", "#FBF4E9", () => setOpen(false), "Profile")}
+            <div style={{ height: 1, backgroundColor: "#E8D9C4" }} />
+            {menuItem("#B03030", "#FFF5F5", () => { setOpen(false); logout(); navigate("/login"); }, "Sign Out")}
+          </div>
+        )}
       </div>
     </nav>
   );

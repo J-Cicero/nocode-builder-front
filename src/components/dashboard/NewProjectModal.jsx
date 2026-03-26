@@ -1,115 +1,167 @@
 import { useState } from "react";
-import { useProjects } from "../../store/projectStore";
-import Modal from "../common/Modal";
 import Button from "../common/Button";
-import Input from "../common/Input";
 
-export default function NewProjectModal({ isOpen, onClose }) {
-  const { createProject } = useProjects();
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    isPublic: false
-  });
-  const [loading, setLoading] = useState(false);
+export default function NewProjectModal({ isOpen, onClose, onCreate }) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [isPublic, setIsPublic] = useState(false);
 
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value
-    }));
-  };
+  if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    if (!formData.name.trim()) {
-      alert("Project name is required");
-      return;
-    }
-
-    setLoading(true);
-    
-    // Simulate delay
-    setTimeout(() => {
-      createProject({
-        name: formData.name,
-        description: formData.description,
-        is_public: formData.isPublic
-      });
-      
-      setFormData({ name: "", description: "", isPublic: false });
-      setLoading(false);
-      onClose();
-    }, 500);
+  const handleCreate = () => {
+    if (!name.trim()) return;
+    onCreate?.({
+      name,
+      description,
+      is_public: isPublic,
+    });
+    setName("");
+    setDescription("");
+    setIsPublic(false);
+    onClose?.();
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Create New Project">
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <Input
-          label="Project Name"
-          placeholder="My Awesome App"
-          name="name"
-          value={formData.name}
-          onChange={handleInputChange}
-          required
-        />
-
-        <div>
-          <label className="block text-sm font-medium text-text mb-2 font-dm-sans">
-            Description (Optional)
-          </label>
-          <textarea
-            name="description"
-            placeholder="What is this project about?"
-            value={formData.description}
-            onChange={handleInputChange}
-            className="w-full px-4 py-2.5 rounded-lg border-2 border-border focus:border-primary focus:outline-none bg-white font-dm-sans resize-none"
-            rows="3"
-          />
-        </div>
-
-        {/* Toggle switch */}
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-medium text-text font-dm-sans">
-            Make it public
-          </label>
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        backgroundColor: "rgba(26,14,10,0.6)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 500,
+        backdropFilter: "blur(4px)",
+        animation: "fadeIn 250ms ease",
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: "#FFFFFF",
+          borderRadius: 16,
+          padding: 32,
+          width: "100%",
+          maxWidth: 480,
+          boxShadow: "0 20px 60px rgba(26,14,10,0.3)",
+          animation: "popIn 250ms ease",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h3 style={{ margin: 0, fontFamily: "'Playfair Display', serif", fontSize: 24, color: "#2C1A0E" }}>
+            New Project
+          </h3>
           <button
-            type="button"
-            onClick={() => setFormData(prev => ({ ...prev, isPublic: !prev.isPublic }))}
-            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
-              formData.isPublic ? "bg-primary" : "bg-border"
-            }`}
+            onClick={onClose}
+            style={{ background: "transparent", border: "none", cursor: "pointer", padding: 6 }}
           >
-            <span
-              className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform ${
-                formData.isPublic ? "translate-x-6" : "translate-x-1"
-              }`}
-            />
+            <svg width="18" height="18" viewBox="0 0 24 24" stroke="#7A5C44" fill="none" strokeWidth="2">
+              <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" />
+            </svg>
           </button>
         </div>
 
-        {/* Buttons */}
-        <div className="flex gap-3 justify-end pt-4">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={onClose}
-            disabled={loading}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            variant="primary"
-            loading={loading}
-          >
-            Create Project
-          </Button>
+        <div style={{ display: "flex", flexDirection: "column", gap: 20, marginTop: 24 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <label style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#2C1A0E" }}>Project Name</label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter project name"
+              style={{
+                padding: "12px 16px",
+                border: "1.5px solid #E8D9C4",
+                borderRadius: 8,
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 15,
+                outline: "none",
+                transition: "border 200ms ease, box-shadow 200ms ease",
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = "#C4622D";
+                e.currentTarget.style.boxShadow = "0 0 0 3px rgba(196,98,45,0.15)";
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = "#E8D9C4";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            />
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <label style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#2C1A0E" }}>Description (optional)</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              placeholder="Describe what you're building"
+              style={{
+                padding: "12px 16px",
+                border: "1.5px solid #E8D9C4",
+                borderRadius: 8,
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 15,
+                outline: "none",
+                resize: "vertical",
+                transition: "border 200ms ease, box-shadow 200ms ease",
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = "#C4622D";
+                e.currentTarget.style.boxShadow = "0 0 0 3px rgba(196,98,45,0.15)";
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = "#E8D9C4";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            />
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#2C1A0E" }}>Make it public</div>
+              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#7A5C44" }}>
+                Anyone can view this project
+              </div>
+            </div>
+            <button
+              onClick={() => setIsPublic(!isPublic)}
+              style={{
+                position: "relative",
+                width: 44,
+                height: 24,
+                borderRadius: 12,
+                border: "none",
+                cursor: "pointer",
+                backgroundColor: isPublic ? "#C4622D" : "#E8D9C4",
+                transition: "background-color 200ms ease",
+                padding: 0,
+              }}
+            >
+              <span
+                style={{
+                  position: "absolute",
+                  top: 2,
+                  left: isPublic ? 22 : 2,
+                  width: 20,
+                  height: 20,
+                  borderRadius: "50%",
+                  backgroundColor: "#FFFFFF",
+                  transition: "left 200ms ease",
+                }}
+              />
+            </button>
+          </div>
         </div>
-      </form>
-    </Modal>
+
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 24 }}>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button variant="primary" onClick={handleCreate} disabled={!name.trim()}>Create Project</Button>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+      `}</style>
+    </div>
   );
 }

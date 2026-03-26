@@ -1,294 +1,368 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../store/authStore";
+import AfricanPattern from "../components/common/AfricanPattern";
 import Input from "../components/common/Input";
 import Button from "../components/common/Button";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const { register, isLoading } = useAuth();
+  const { register, token, isLoading } = useAuth();
   const [plan, setPlan] = useState("free");
-  const [showEnterpriseFields, setShowEnterpriseFields] = useState(false);
-  const [formData, setFormData] = useState({
+  const [form, setForm] = useState({
     firstName: "",
     lastName: "",
     email: "",
     password: "",
     phone: "",
     companyName: "",
-    companySize: ""
+    companySize: "",
   });
   const [error, setError] = useState("");
 
-  const passwordStrength = (pswd) => {
-    let score = 0;
-    if (pswd.length >= 8) score++;
-    if (/[A-Z]/.test(pswd)) score++;
-    if (/\d/.test(pswd)) score++;
-    if (/[!@#$%^&*]/.test(pswd)) score++;
-    return score;
-  };
+  const kenteId = useMemo(() => `kente-${Math.random().toString(36).slice(2, 8)}`, []);
 
-  const strengthLevel = passwordStrength(formData.password);
-  const strengthTexts = ["Weak", "Fair", "Good", "Strong"];
-  const strengthColors = ["bg-error", "bg-orange-500", "bg-yellow-500", "bg-green"];
+  useEffect(() => {
+    const hasToken = token || localStorage.getItem("access_token");
+    if (hasToken) navigate("/dashboard");
+  }, [token, navigate]);
 
-  const handlePlanChange = (newPlan) => {
-    setPlan(newPlan);
-    setShowEnterpriseFields(newPlan === "enterprise");
-  };
+  const strength = (() => {
+    const len = form.password.length;
+    if (len === 0) return { width: "0%", color: "#E8D9C4", label: "" };
+    if (len < 6) return { width: "25%", color: "#B03030", label: "Weak" };
+    if (len < 9) return { width: "50%", color: "#D4A017", label: "Fair" };
+    if (len < 12) return { width: "75%", color: "#C4622D", label: "Good" };
+    return { width: "100%", color: "#2D5A1B", label: "Strong" };
+  })();
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+  const handleChange = (key, value) => setForm((f) => ({ ...f, [key]: value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
-      setError("Please fill in all required fields");
+    if (!form.firstName || !form.lastName || !form.email || !form.password) {
+      setError("Please fill in all required fields.");
       return;
     }
-
-    if (showEnterpriseFields && !formData.companyName) {
-      setError("Please fill in company name");
+    if (plan === "enterprise" && !form.companyName) {
+      setError("Please provide your company name.");
       return;
     }
-
     try {
-      await register({
-        ...formData,
-        plan
-      });
+      await register({ ...form, plan });
       navigate("/dashboard");
     } catch (err) {
-      setError(err.message || "Registration failed");
+      setError(err?.message || "Registration failed.");
     }
   };
 
-  return (
-    <div className="flex h-screen bg-bg">
-      {/* Left column - same as LoginPage */}
-      <div className="hidden md:flex md:w-1/2 bg-dark flex-col justify-between p-12 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-15">
-          <svg
-            className="absolute inset-0 w-full h-full"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 400 400"
-          >
-            <pattern id="kente" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
-              <rect x="0" y="0" width="20" height="20" fill="#C4622D" />
-              <rect x="20" y="20" width="20" height="20" fill="#C4622D" />
-              <circle cx="10" cy="10" r="3" fill="#D4A017" />
-              <circle cx="30" cy="30" r="3" fill="#D4A017" />
-            </pattern>
-            <rect x="0" y="0" width="400" height="400" fill="url(#kente)" />
-          </svg>
-        </div>
+  const planCard = (id, title, subtitle, price, iconPath) => {
+    const active = plan === id;
+    return (
+      <button
+        key={id}
+        type="button"
+        onClick={() => setPlan(id)}
+        style={{
+          flex: 1,
+          padding: 16,
+          borderRadius: 10,
+          border: `2px solid ${active ? "#C4622D" : "#E8D9C4"}`,
+          backgroundColor: active ? "#FFF0E8" : "#FFFFFF",
+          display: "flex",
+          flexDirection: "column",
+          gap: 6,
+          cursor: "pointer",
+          transition: "all 150ms ease",
+        }}
+        onMouseEnter={(e) => !active && (e.currentTarget.style.borderColor = "#C4622D")}
+        onMouseLeave={(e) => !active && (e.currentTarget.style.borderColor = "#E8D9C4")}
+      >
+        <div style={{ color: "#C4622D" }}>{iconPath}</div>
+        <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 600, color: "#2C1A0E" }}>{title}</div>
+        <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#7A5C44" }}>{subtitle}</div>
+        <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: "#2D5A1B" }}>{price}</div>
+      </button>
+    );
+  };
 
-        <div className="relative z-10">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold text-lg">
+  return (
+    <div style={{ display: "flex", flexDirection: "row", minHeight: "100vh", backgroundColor: "#FBF4E9", animation: "pageIn 400ms ease" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+        @keyframes pageIn { from { opacity:0; transform: translateY(20px);} to { opacity:1; transform: translateY(0);} }
+        @media (max-width: 768px) {
+          .left-col { display:none; }
+          .right-col { width:100% !important; }
+        }
+      `}</style>
+
+      {/* Left column */}
+      <div className="left-col" style={{ width: "50%", backgroundColor: "#1A0E0A", position: "relative", overflow: "hidden", display: "flex" }}>
+        <AfricanPattern key={kenteId} />
+        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between", width: "100%", padding: 48 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: "#C4622D", display: "flex", alignItems: "center", justifyContent: "center", color: "#FFFFFF", fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700 }}>
               B
             </div>
-            <span className="text-secondary text-2xl font-playfair-display font-bold">
-              BuildrAfrica
-            </span>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: "#D4A017" }}>BuildrAfrica</div>
+          </div>
+
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 24, maxWidth: 540, textAlign: "left" }}>
+            <h1 style={{ margin: 0, fontFamily: "'Playfair Display', serif", fontSize: 52, lineHeight: 1.2, color: "#FFFFFF" }}>
+              Build apps.<br />No code<br />needed.
+            </h1>
+            <div style={{ width: 64, height: 3, backgroundColor: "#D4A017" }} />
+            <p style={{ margin: 0, fontFamily: "'DM Sans', sans-serif", fontSize: 16, lineHeight: 1.7, color: "#A08060", maxWidth: 380 }}>
+              Create powerful applications visually, connect your data, and automate workflows — without writing a single line of code.
+            </p>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 0, color: "#A08060", fontFamily: "'DM Sans', sans-serif", fontSize: 12 }}>
+            {[
+              { num: "2,400+", label: "Apps Built" },
+              { num: "150+", label: "Countries" },
+              { num: "Free", label: "To Start" },
+            ].map((stat, idx) => (
+              <div key={stat.label} style={{ display: "flex", alignItems: "center" }}>
+                {idx !== 0 && <div style={{ width: 1, height: 40, backgroundColor: "#3D2010", margin: "0 12px" }} />}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "0 12px" }}>
+                  <span style={{ color: "#D4A017", fontSize: 28, fontWeight: 700 }}>{stat.num}</span>
+                  <span>{stat.label}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-
-        <div className="relative z-10 text-center">
-          <h1 className="text-5xl font-playfair-display font-bold text-white mb-4">
-            Build apps.
-            <br />
-            No code needed.
-          </h1>
-          <p className="text-text-muted text-lg mb-12">
-            Create powerful applications visually, in minutes.
-          </p>
-
-          <div className="flex justify-center gap-8 text-sm text-secondary">
-            <span>2,400+ Apps</span>
-            <span>·</span>
-            <span>150+ Countries</span>
-            <span>·</span>
-            <span>Free to start</span>
-          </div>
-        </div>
-
-        <div></div>
       </div>
 
       {/* Right column */}
-      <div className="w-full md:w-1/2 bg-bg flex items-center justify-center p-8 overflow-y-auto">
-        <div className="w-full max-w-sm py-8">
-          {/* Mobile logo */}
-          <div className="md:hidden mb-8 flex items-center justify-center">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-bold">
-                B
-              </div>
-              <span className="text-secondary text-xl font-playfair-display font-bold">
-                BuildrAfrica
-              </span>
+      <div className="right-col" style={{ width: "50%", backgroundColor: "#FBF4E9", display: "flex", flexDirection: "column" }}>
+        <div style={{ padding: "20px 40px", display: "flex", justifyContent: "flex-end", alignItems: "center" }}>
+          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#7A5C44" }}>Already have an account?</span>
+          <button
+            type="button"
+            onClick={() => navigate("/login")}
+            style={{ marginLeft: 8, background: "transparent", border: "none", color: "#C4622D", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}
+          >
+            Sign in →
+          </button>
+        </div>
+
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 40 }}>
+          <form onSubmit={handleSubmit} style={{ width: "100%", maxWidth: 480, display: "flex", flexDirection: "column", gap: 18 }}>
+            <p style={{ margin: 0, fontFamily: "'DM Sans', sans-serif", fontSize: 11, letterSpacing: "3px", color: "#C4622D", fontWeight: 600 }}>
+              GET STARTED
+            </p>
+            <h2 style={{ margin: "4px 0 6px", fontFamily: "'Playfair Display', serif", fontSize: 32, color: "#2C1A0E" }}>
+              Create your account
+            </h2>
+            <p style={{ margin: 0, fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#7A5C44", lineHeight: 1.6 }}>
+              Join thousands of builders across Africa and beyond.
+            </p>
+
+            <div style={{ display: "flex", gap: 12 }}>
+              {planCard(
+                "free",
+                "Free Plan",
+                "Perfect to get started",
+                "$0 / month",
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C4622D" strokeWidth="2">
+                  <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+              {planCard(
+                "enterprise",
+                "Enterprise",
+                "For growing teams",
+                "Custom pricing",
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C4622D" strokeWidth="2">
+                  <rect x="3" y="7" width="5" height="13" rx="1" />
+                  <rect x="10" y="4" width="5" height="16" rx="1" />
+                  <rect x="17" y="9" width="4" height="11" rx="1" />
+                </svg>
+              )}
             </div>
-          </div>
 
-          <h2 className="text-3xl font-playfair-display font-bold text-text mb-8">
-            Create your account
-          </h2>
-
-          {/* Plan selection */}
-          <div className="grid grid-cols-2 gap-4 mb-8">
-            {[
-              { id: "free", icon: "⚡", label: "Free Plan", desc: "Perfect to get started", price: "$0/month" },
-              { id: "enterprise", icon: "🏢", label: "Enterprise", desc: "For growing teams", price: "Custom pricing" }
-            ].map((option) => (
-              <button
-                key={option.id}
-                onClick={() => handlePlanChange(option.id)}
-                className={`p-4 rounded-lg border-2 transition-all text-left ${
-                  plan === option.id
-                    ? "border-primary bg-primary bg-opacity-5"
-                    : "border-border hover:border-primary"
-                }`}
-              >
-                <div className="text-2xl mb-2">{option.icon}</div>
-                <p className="font-medium text-text text-sm">{option.label}</p>
-                <p className="text-xs text-text-muted">{option.desc}</p>
-                <p className="text-xs font-bold text-primary mt-2">{option.price}</p>
-              </button>
-            ))}
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Name fields */}
-            <div className="grid grid-cols-2 gap-3">
+            {/* Form fields */}
+            <div style={{ display: "flex", gap: 12 }}>
               <Input
                 label="First Name"
-                placeholder="John"
-                value={formData.firstName}
-                onChange={handleInputChange}
                 name="firstName"
-                required
+                placeholder="Jean"
+                value={form.firstName}
+                onChange={(e) => handleChange("firstName", e.target.value)}
               />
               <Input
                 label="Last Name"
-                placeholder="Doe"
-                value={formData.lastName}
-                onChange={handleInputChange}
                 name="lastName"
-                required
+                placeholder="Dupont"
+                value={form.lastName}
+                onChange={(e) => handleChange("lastName", e.target.value)}
               />
             </div>
 
             <Input
-              label="Email Address"
-              type="email"
-              placeholder="your@email.com"
-              value={formData.email}
-              onChange={handleInputChange}
+              label="Email"
               name="email"
-              required
+              type="email"
+              placeholder="jean@example.com"
+              value={form.email}
+              onChange={(e) => handleChange("email", e.target.value)}
+              icon={
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+                  <rect x="3.5" y="5" width="17" height="14" rx="2" />
+                  <path d="m4 7 8 5 8-5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              }
             />
 
-            {/* Password with strength */}
-            <div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <Input
                 label="Password"
+                name="password"
                 type="password"
                 placeholder="••••••••"
-                value={formData.password}
-                onChange={handleInputChange}
-                name="password"
-                required
+                value={form.password}
+                onChange={(e) => handleChange("password", e.target.value)}
+                icon={
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+                    <rect x="5" y="10" width="14" height="10" rx="2" />
+                    <path d="M9 10V7a3 3 0 0 1 6 0v3" strokeLinecap="round" />
+                  </svg>
+                }
               />
-              {formData.password && (
-                <div className="mt-2">
-                  <div className="flex gap-1 mb-1">
-                    {[...Array(4)].map((_, i) => (
-                      <div
-                        key={i}
-                        className={`h-1 flex-1 rounded ${i < strengthLevel ? strengthColors[strengthLevel - 1] : "bg-border"}`}
-                      ></div>
-                    ))}
-                  </div>
-                  <p className={`text-xs font-medium ${strengthColors[strengthLevel - 1] || "text-text-muted"}`}>
-                    {strengthTexts[strengthLevel - 1] || "Too weak"}
-                  </p>
-                </div>
+              <div style={{ height: 4, borderRadius: 2, backgroundColor: "#E8D9C4", overflow: "hidden" }}>
+                <div style={{ width: strength.width, height: "100%", backgroundColor: strength.color, transition: "width 300ms ease" }} />
+              </div>
+              {strength.label && (
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "#7A5C44" }}>
+                  {strength.label}
+                </span>
               )}
             </div>
 
             <Input
-              label="Phone (Optional)"
-              type="tel"
-              placeholder="+234 900 000 0000"
-              value={formData.phone}
-              onChange={handleInputChange}
+              label="Phone (optional)"
               name="phone"
+              type="tel"
+              placeholder="+225 07 00 00 00"
+              value={form.phone}
+              onChange={(e) => handleChange("phone", e.target.value)}
+              icon={
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+                  <path d="M5 4h4l2 5-3 2c1.2 2.4 3.1 4.3 5.5 5.5l2-3 5 2v4c0 .6-.4 1-1 1A16 16 0 0 1 4 5c0-.6.4-1 1-1Z" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              }
             />
 
-            {/* Enterprise fields */}
-            {showEnterpriseFields && (
-              <div className="space-y-4 mt-6 pt-6 border-t border-border animate-in fade-in slide-in-from-top-1 duration-300">
+            {plan === "enterprise" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 6 }}>
                 <Input
                   label="Company Name"
-                  placeholder="Your Company"
-                  value={formData.companyName}
-                  onChange={handleInputChange}
                   name="companyName"
-                  required
+                  placeholder="Your company"
+                  value={form.companyName}
+                  onChange={(e) => handleChange("companyName", e.target.value)}
                 />
-                <div>
-                  <label className="block text-sm font-medium text-text mb-2">Company Size</label>
-                  <select
-                    value={formData.companySize}
-                    onChange={handleInputChange}
-                    name="companySize"
-                    className="w-full px-4 py-2.5 rounded-lg border-2 border-border focus:border-primary focus:outline-none bg-white font-dm-sans"
-                  >
-                    <option value="">Select size</option>
-                    <option value="1-10">1-10 employees</option>
-                    <option value="11-50">11-50 employees</option>
-                    <option value="51-200">51-200 employees</option>
-                    <option value="200+">200+ employees</option>
-                  </select>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <label style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 500, color: "#2C1A0E" }}>
+                    Company Size
+                  </label>
+                  <div style={{ position: "relative" }}>
+                    <div
+                      tabIndex={0}
+                      role="listbox"
+                      style={{
+                        padding: "12px 16px",
+                        border: "1.5px solid #E8D9C4",
+                        borderRadius: 8,
+                        fontFamily: "'DM Sans', sans-serif",
+                        fontSize: 14,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                      onFocus={(e) => (e.currentTarget.style.borderColor = "#C4622D")}
+                      onBlur={(e) => (e.currentTarget.style.borderColor = "#E8D9C4")}
+                      onClick={(e) => {
+                        const menu = e.currentTarget.nextSibling;
+                        menu.style.display = menu.style.display === "block" ? "none" : "block";
+                      }}
+                    >
+                      <span>{form.companySize || "Select size"}</span>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7A5C44" strokeWidth="2">
+                        <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </div>
+                    <div
+                      style={{
+                        display: "none",
+                        position: "absolute",
+                        top: "calc(100% + 6px)",
+                        left: 0,
+                        right: 0,
+                        backgroundColor: "#FFFFFF",
+                        border: "1px solid #E8D9C4",
+                        borderRadius: 8,
+                        zIndex: 10,
+                        boxShadow: "0 10px 24px rgba(26,14,10,0.12)",
+                      }}
+                    >
+                      {["1-10 employees", "11-50 employees", "51-200 employees", "200+ employees"].map((opt) => (
+                        <div
+                          key={opt}
+                          onClick={() => {
+                            handleChange("companySize", opt);
+                            const menu = document.activeElement?.nextSibling;
+                            if (menu) menu.style.display = "none";
+                          }}
+                          style={{
+                            padding: "10px 14px",
+                            fontFamily: "'DM Sans', sans-serif",
+                            fontSize: 14,
+                            color: "#2C1A0E",
+                            cursor: "pointer",
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#FFF0E8")}
+                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                        >
+                          {opt}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
 
             {error && (
-              <div className="bg-red-100 border border-error text-error p-3 rounded-lg text-sm">
+              <div style={{ backgroundColor: "#FFF5F5", borderLeft: "3px solid #B03030", borderRadius: "0 6px 6px 0", padding: "10px 14px", fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#B03030" }}>
                 {error}
               </div>
             )}
 
-            <Button
-              type="submit"
-              variant="primary"
-              fullWidth
-              loading={isLoading}
-              size="md"
-            >
+            <Button type="submit" variant="primary" fullWidth loading={isLoading}>
               Create Account
             </Button>
-          </form>
 
-          {/* Sign in link */}
-          <p className="text-center text-text-muted text-sm mt-6 font-dm-sans">
-            Already have an account?{" "}
-            <button
-              type="button"
-              onClick={() => navigate("/login")}
-              className="text-primary hover:underline font-medium"
-            >
-              Sign in
-            </button>
-          </p>
+            <div style={{ textAlign: "center", fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#7A5C44" }}>
+              Already have an account?{" "}
+              <button
+                type="button"
+                onClick={() => navigate("/login")}
+                style={{ background: "transparent", border: "none", color: "#C4622D", fontWeight: 600, cursor: "pointer" }}
+              >
+                Sign in
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div style={{ padding: 20, textAlign: "center", fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#B09070" }}>
+          © 2025 BuildrAfrica · Terms · Privacy
         </div>
       </div>
     </div>

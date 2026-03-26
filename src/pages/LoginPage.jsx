@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../store/authStore";
+import AfricanPattern from "../components/common/AfricanPattern";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login, isLoading } = useAuth();
+  const { login, token, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -12,13 +13,14 @@ export default function LoginPage() {
 
   const kenteId = useMemo(() => `kente-${Math.random().toString(36).slice(2, 8)}`, []);
 
+  useEffect(() => {
+    const hasToken = token || localStorage.getItem("access_token");
+    if (hasToken) navigate("/dashboard");
+  }, [token, navigate]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    if (!email.trim() || !password.trim()) {
-      setError("Please enter both email and password.");
-      return;
-    }
     try {
       await login(email, password);
       navigate("/dashboard");
@@ -28,502 +30,299 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="login-page">
+    <div style={{ display: "flex", flexDirection: "row", minHeight: "100vh", backgroundColor: "#FBF4E9", animation: "pageIn 400ms ease" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap');
-        * { box-sizing: border-box; }
-        body { margin: 0; }
-        .login-page {
-          display: flex;
-          flex-direction: row;
-          min-height: 100vh;
-          background: #FBF4E9;
-          color: #2C1A0E;
-          font-family: 'DM Sans', sans-serif;
-        }
-        .left {
-          position: relative;
-          width: 50%;
-          background: #1A0E0A;
-          color: #FFFFFF;
-          padding: 48px;
-          display: flex;
-          overflow: hidden;
-        }
-        .pattern {
-          position: absolute;
-          inset: 0;
-          opacity: 0.15;
-          pointer-events: none;
-        }
-        .left-content {
-          position: relative;
-          z-index: 10;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          width: 100%;
-        }
-        .logo {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-        .logo-box {
-          width: 48px;
-          height: 48px;
-          border-radius: 12px;
-          background: #C4622D;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-family: 'Playfair Display', serif;
-          font-size: 24px;
-          color: #FFFFFF;
-        }
-        .logo-text {
-          font-family: 'Playfair Display', serif;
-          font-size: 24px;
-          font-weight: 600;
-          color: #D4A017;
-        }
-        .hero {
-          text-align: left;
-          margin: 0 auto;
-          max-width: 540px;
-        }
-        .heading {
-          font-family: 'Playfair Display', serif;
-          font-size: 48px;
-          line-height: 1.15;
-          font-weight: 600;
-          color: #FFFFFF;
-          margin: 0 0 18px;
-        }
-        .line {
-          width: 60px;
-          height: 2px;
-          background: #D4A017;
-          margin-bottom: 16px;
-        }
-        .subtitle {
-          font-size: 16px;
-          color: #A08060;
-          margin: 0;
-        }
-        .stats {
-          display: flex;
-          align-items: center;
-          gap: 18px;
-          color: #A08060;
-          font-size: 14px;
-        }
-        .stat {
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-        }
-        .number {
-          color: #D4A017;
-          font-size: 22px;
-          font-weight: 600;
-        }
-        .divider {
-          width: 1px;
-          align-self: stretch;
-          background: #3D2010;
-        }
-        .right {
-          width: 50%;
-          background: #FBF4E9;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          padding: 48px 32px;
-        }
-        .card {
-          width: 100%;
-          max-width: 420px;
-          display: flex;
-          flex-direction: column;
-          gap: 18px;
-        }
-        .top-link {
-          align-self: flex-end;
-          font-size: 14px;
-          color: #7A5C44;
-        }
-        .top-link button {
-          background: none;
-          border: none;
-          padding: 0;
-          margin-left: 6px;
-          color: #C4622D;
-          font-weight: 600;
-          cursor: pointer;
-        }
-        .eyebrow {
-          font-size: 11px;
-          letter-spacing: 0.28em;
-          color: #C4622D;
-          font-weight: 600;
-          margin: 0;
-        }
-        .title {
-          font-family: 'Playfair Display', serif;
-          font-size: 32px;
-          color: #2C1A0E;
-          margin: 4px 0 6px;
-        }
-        .subtitle-right {
-          font-size: 14px;
-          color: #7A5C44;
-          margin: 0;
-        }
-        .field {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-        .label {
-          font-size: 14px;
-          font-weight: 600;
-          color: #2C1A0E;
-        }
-        .input-wrap {
-          position: relative;
-        }
-        .input {
-          width: 100%;
-          border: 1.5px solid #E8D9C4;
-          border-radius: 8px;
-          background: #FFFFFF;
-          padding: 12px 16px 12px 44px;
-          font-size: 15px;
-          color: #2C1A0E;
-          transition: border 0.2s ease, box-shadow 0.2s ease;
-        }
-        .input::placeholder {
-          color: #B09070;
-        }
-        .input:focus {
-          border-color: #C4622D;
-          box-shadow: 0 0 0 3px rgba(196, 98, 45, 0.15);
-          outline: none;
-        }
-        .icon-left, .icon-right {
-          position: absolute;
-          top: 50%;
-          transform: translateY(-50%);
-          color: #7A5C44;
-        }
-        .icon-left { left: 14px; }
-        .icon-right { right: 14px; cursor: pointer; }
-        .forgot {
-          align-self: flex-end;
-          font-size: 13px;
-          color: #C4622D;
-          background: none;
-          border: none;
-          cursor: pointer;
-        }
-        .submit {
-          width: 100%;
-          height: 48px;
-          border: none;
-          border-radius: 8px;
-          background: #C4622D;
-          color: #FFFFFF;
-          font-size: 16px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: transform 0.15s ease, background 0.2s ease, box-shadow 0.2s ease;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          box-shadow: 0 10px 30px rgba(196, 98, 45, 0.2);
-        }
-        .submit:hover { background: #A04E22; transform: translateY(-1px); }
-        .submit:active { transform: translateY(1px); }
-        .submit:disabled { opacity: 0.8; cursor: not-allowed; }
-        .spinner {
-          width: 16px;
-          height: 16px;
-          border: 2px solid #FFFFFF;
-          border-top-color: transparent;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+        @keyframes pageIn { from { opacity:0; transform: translateY(20px);} to { opacity:1; transform: translateY(0);} }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .separator {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          color: #7A5C44;
-          font-size: 13px;
-        }
-        .separator-line {
-          flex: 1;
-          height: 1px;
-          background: #E8D9C4;
-        }
-        .google {
-          width: 100%;
-          height: 48px;
-          border-radius: 8px;
-          border: 1.5px solid #E8D9C4;
-          background: #FFFFFF;
-          color: #2C1A0E;
-          font-weight: 600;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          transition: border 0.2s ease;
-        }
-        .google:hover { border-color: #C4622D; }
-        .footer {
-          text-align: center;
-          font-size: 14px;
-          color: #7A5C44;
-        }
-        .footer button {
-          background: none;
-          border: none;
-          color: #C4622D;
-          font-weight: 700;
-          cursor: pointer;
-        }
-        .bottom-note {
-          text-align: center;
-          font-size: 11px;
-          color: #B09070;
-          margin-top: 12px;
-        }
-        .error-banner {
-          display: flex;
-          align-items: flex-start;
-          gap: 10px;
-          background: #FFF0F0;
-          border-left: 3px solid #B03030;
-          color: #B03030;
-          padding: 10px 14px;
-          border-radius: 10px;
-          font-size: 13px;
-        }
-        @media (max-width: 767px) {
-          .left { display: none; }
-          .right { width: 100%; padding: 40px 24px; }
-          .login-page { background: #FBF4E9; }
+        @media (max-width: 768px) {
+          .left-col { display: none; }
+          .right-col { width: 100% !important; }
         }
       `}</style>
 
       {/* Left column */}
-      <div className="left">
-        <div className="pattern">
-          <svg width="100%" height="100%" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <pattern id={kenteId} x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
-                <g fill="#C4622D">
-                  <path d="M0 0h40L0 40Z" />
-                  <path d="M40 40h40L40 80Z" />
-                  <path d="M40 0h40L40 40Z" />
-                  <path d="M0 40h40L0 80Z" />
-                  <path d="M0 0l80 80" stroke="#C4622D" strokeWidth="4" />
-                  <path d="M80 0 0 80" stroke="#C4622D" strokeWidth="4" />
-                  <path d="M40 0v80" stroke="#C4622D" strokeWidth="3" />
-                  <path d="M0 40h80" stroke="#C4622D" strokeWidth="3" />
-                </g>
-              </pattern>
-            </defs>
-            <rect width="400" height="400" fill={`url(#${kenteId})`} />
-          </svg>
-        </div>
-
-        <div className="left-content">
-          <div className="logo">
-            <div className="logo-box">B</div>
-            <div className="logo-text">BuildrAfrica</div>
+      <div className="left-col" style={{ width: "50%", backgroundColor: "#1A0E0A", position: "relative", overflow: "hidden", display: "flex" }}>
+        <AfricanPattern key={kenteId} />
+        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between", width: "100%", padding: 48 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: "#C4622D", display: "flex", alignItems: "center", justifyContent: "center", color: "#FFFFFF", fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700 }}>
+              B
+            </div>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: "#D4A017" }}>BuildrAfrica</div>
           </div>
 
-          <div className="hero">
-            <h1 className="heading">
-              Build apps.
-              <br />
-              No code needed.
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 24, maxWidth: 540 }}>
+            <h1 style={{ margin: 0, fontFamily: "'Playfair Display', serif", fontSize: 52, lineHeight: 1.2, color: "#FFFFFF" }}>
+              Build apps.<br />No code<br />needed.
             </h1>
-            <div className="line" />
-            <p className="subtitle">
-              Create powerful applications visually, connect your data, automate your workflows — all
-              without writing a single line of code.
+            <div style={{ width: 64, height: 3, backgroundColor: "#D4A017" }} />
+            <p style={{ margin: 0, fontFamily: "'DM Sans', sans-serif", fontSize: 16, lineHeight: 1.7, color: "#A08060", maxWidth: 380 }}>
+              Create powerful applications visually, connect your data, and automate workflows — without writing a single line of code.
             </p>
           </div>
 
-          <div className="stats">
-            <div className="stat">
-              <span className="number">2,400+</span>
-              <span>Apps Built</span>
-            </div>
-            <div className="divider" />
-            <div className="stat">
-              <span className="number">150+</span>
-              <span>Countries</span>
-            </div>
-            <div className="divider" />
-            <div className="stat">
-              <span className="number">Free</span>
-              <span>To Start</span>
-            </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 0, color: "#A08060", fontFamily: "'DM Sans', sans-serif", fontSize: 12 }}>
+            {[
+              { num: "2,400+", label: "Apps Built" },
+              { num: "150+", label: "Countries" },
+              { num: "Free", label: "To Start" },
+            ].map((stat, idx) => (
+              <div key={stat.label} style={{ display: "flex", alignItems: "center" }}>
+                {idx !== 0 && <div style={{ width: 1, height: 40, backgroundColor: "#3D2010", margin: "0 12px" }} />}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "0 12px" }}>
+                  <span style={{ color: "#D4A017", fontSize: 28, fontWeight: 700 }}>{stat.num}</span>
+                  <span>{stat.label}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Right column */}
-      <div className="right">
-        <div className="card">
-          <div className="top-link">
-            New here?
-            <button type="button" onClick={() => navigate("/register")}>
-              Create an account →
-            </button>
-          </div>
+      <div className="right-col" style={{ width: "50%", backgroundColor: "#FBF4E9", display: "flex", flexDirection: "column" }}>
+        <div style={{ padding: "20px 40px", display: "flex", justifyContent: "flex-end", alignItems: "center" }}>
+          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#7A5C44" }}>New here?</span>
+          <button
+            type="button"
+            onClick={() => navigate("/register")}
+            style={{ marginLeft: 8, background: "transparent", border: "none", color: "#C4622D", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}
+          >
+            Create an account →
+          </button>
+        </div>
 
-          <div>
-            <p className="eyebrow">WELCOME BACK</p>
-            <h2 className="title">Sign in to your account</h2>
-            <p className="subtitle-right">Enter your credentials to access your projects.</p>
-          </div>
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 40 }}>
+          <form onSubmit={handleSubmit} style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", gap: 18 }}>
+            <p style={{ margin: 0, fontFamily: "'DM Sans', sans-serif", fontSize: 11, letterSpacing: "3px", color: "#C4622D", fontWeight: 600 }}>
+              WELCOME BACK
+            </p>
+            <h2 style={{ margin: "4px 0 6px", fontFamily: "'Playfair Display', serif", fontSize: 32, color: "#2C1A0E" }}>
+              Sign in to your account
+            </h2>
+            <p style={{ margin: 0, fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#7A5C44", lineHeight: 1.6 }}>
+              Enter your credentials to access your workspace.
+            </p>
 
-          {error && (
-            <div className="error-banner">
-              <span>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path d="M12 8v5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M12 16h.01" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  <path
-                    d="m10.073 4.247-7.03 12.153A2 2 0 0 0 4.73 19.75h14.54a2 2 0 0 0 1.687-3.35L13.927 4.247a2 2 0 0 0-3.854 0Z"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
+            {error && (
+              <div style={{ backgroundColor: "#FFF5F5", borderLeft: "3px solid #B03030", borderRadius: "0 6px 6px 0", padding: "10px 14px", display: "flex", alignItems: "center", gap: 8 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B03030" strokeWidth="1.6">
+                  <path d="M12 8v5" strokeLinecap="round" />
+                  <circle cx="12" cy="15.5" r="0.8" fill="#B03030" />
+                  <path d="M10.07 4.25 3.04 16.4A2 2 0 0 0 4.74 19.7h14.52a2 2 0 0 0 1.7-3.3L13.93 4.25a2 2 0 0 0-3.86 0Z" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-              </span>
-              <span>{error}</span>
-            </div>
-          )}
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#B03030" }}>{error}</span>
+              </div>
+            )}
 
-          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div className="field">
-              <label className="label">Email address</label>
-              <div className="input-wrap">
-                <span className="icon-left">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <rect x="3.5" y="5" width="17" height="14" rx="2" strokeWidth="1.5" />
-                    <path d="m4 7 8 5 8-5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            {/* Email */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 500, color: "#2C1A0E" }}>
+                Email address
+              </label>
+              <div style={{ position: "relative" }}>
+                <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#7A5C44" }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+                    <rect x="3.5" y="5" width="17" height="14" rx="2" />
+                    <path d="m4 7 8 5 8-5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </span>
                 <input
-                  className="input"
                   type="email"
-                  placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
                   required
+                  style={{
+                    width: "100%",
+                    padding: "12px 16px 12px 44px",
+                    border: "1.5px solid #E8D9C4",
+                    borderRadius: 8,
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 15,
+                    color: "#2C1A0E",
+                    outline: "none",
+                    transition: "border 200ms ease, box-shadow 200ms ease",
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#C4622D";
+                    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(196,98,45,0.15)";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "#E8D9C4";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
                 />
               </div>
             </div>
 
-            <div className="field">
-              <label className="label">Password</label>
-              <div className="input-wrap">
-                <span className="icon-left">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <rect x="5" y="10" width="14" height="10" rx="2" strokeWidth="1.5" />
-                    <path d="M9 10V7a3 3 0 1 1 6 0v3" strokeWidth="1.5" strokeLinecap="round" />
+            {/* Password */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 500, color: "#2C1A0E" }}>
+                Password
+              </label>
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <button
+                  type="button"
+                  onClick={() => alert("Password reset not implemented yet")}
+                  style={{ background: "transparent", border: "none", color: "#C4622D", fontFamily: "'DM Sans', sans-serif", fontSize: 13, cursor: "pointer" }}
+                >
+                  Forgot password?
+                </button>
+              </div>
+              <div style={{ position: "relative" }}>
+                <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#7A5C44" }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+                    <rect x="5" y="10" width="14" height="10" rx="2" />
+                    <path d="M9 10V7a3 3 0 0 1 6 0v3" strokeLinecap="round" />
                   </svg>
                 </span>
-                <input
-                  className="input"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-                <span className="icon-right" onClick={() => setShowPassword((p) => !p)} aria-label="Toggle password">
+                <span
+                  style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", color: "#7A5C44", cursor: "pointer" }}
+                  onClick={() => setShowPassword((p) => !p)}
+                >
                   {showPassword ? (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path d="m3 3 18 18" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+                      <path d="M3 3l18 18" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M10.5 10.5a3 3 0 0 0 4.95 3.036" strokeLinecap="round" strokeLinejoin="round" />
                       <path
-                        d="M10.477 5.112C10.974 5.038 11.484 5 12 5c4.478 0 8.268 2.943 9.542 7a10.73 10.73 0 0 1-2.104 3.623"
-                        strokeWidth="1.5"
+                        d="M6.6 6.6C4.6 7.8 3.2 9.65 2.5 12c1.3 4.06 5.1 7 9.5 7 1.24 0 2.44-.2 3.57-.57"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       />
                       <path
-                        d="M6.598 6.608C4.65 7.83 3.215 9.68 2.458 12c1.274 4.057 5.064 7 9.542 7 1.237 0 2.437-.2 3.568-.572"
-                        strokeWidth="1.5"
+                        d="M17.4 17.4c2-1.2 3.4-3.05 4.1-5.4C20.2 7.94 16.4 5 12 5c-.52 0-1.03.04-1.52.12"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       />
-                      <path d="M9.88 9.88a3 3 0 0 0 4.24 4.24" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   ) : (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
                       <path
-                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7Z"
-                        strokeWidth="1.5"
+                        d="M2.5 12c1.3-4.06 5.1-7 9.5-7s8.2 2.94 9.5 7c-1.3 4.06-5.1 7-9.5 7s-8.2-2.94-9.5-7Z"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       />
-                      <path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      <circle cx="12" cy="12" r="3" />
                     </svg>
                   )}
                 </span>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "12px 16px 12px 44px",
+                    border: "1.5px solid #E8D9C4",
+                    borderRadius: 8,
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 15,
+                    color: "#2C1A0E",
+                    outline: "none",
+                    transition: "border 200ms ease, box-shadow 200ms ease",
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#C4622D";
+                    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(196,98,45,0.15)";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "#E8D9C4";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                />
               </div>
-              <button className="forgot" type="button" onClick={() => alert("Password reset not implemented yet")}>
-                Forgot password?
-              </button>
             </div>
 
-            <button className="submit" type="submit" disabled={isLoading}>
+            <button
+              type="submit"
+              disabled={isLoading}
+              style={{
+                width: "100%",
+                height: 48,
+                backgroundColor: "#C4622D",
+                color: "#FFFFFF",
+                border: "none",
+                borderRadius: 8,
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 16,
+                fontWeight: 500,
+                cursor: "pointer",
+                transition: "transform 150ms ease, background-color 150ms ease",
+              }}
+              onMouseEnter={(e) => !isLoading && (e.currentTarget.style.backgroundColor = "#A04E22", e.currentTarget.style.transform = "translateY(-2px)")}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#C4622D"; e.currentTarget.style.transform = "none"; }}
+              onMouseDown={(e) => (e.currentTarget.style.transform = "translateY(1px)")}
+              onMouseUp={(e) => (e.currentTarget.style.transform = "translateY(-2px)")}
+            >
               {isLoading ? (
-                <>
-                  <span className="spinner" />
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                  <span
+                    style={{
+                      width: 18,
+                      height: 18,
+                      borderRadius: "50%",
+                      border: "3px solid rgba(255,255,255,0.35)",
+                      borderTopColor: "#FFFFFF",
+                      animation: "spin 0.8s linear infinite",
+                      display: "inline-block",
+                    }}
+                  />
                   Signing in...
-                </>
+                </span>
               ) : (
                 "Sign In"
               )}
             </button>
-          </form>
 
-          <div className="separator">
-            <div className="separator-line" />
-            <span>or continue with</span>
-            <div className="separator-line" />
-          </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ flex: 1, height: 1, backgroundColor: "#E8D9C4" }} />
+              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#7A5C44" }}>or continue with</span>
+              <div style={{ flex: 1, height: 1, backgroundColor: "#E8D9C4" }} />
+            </div>
 
-          <button className="google" type="button">
-            <svg width="20" height="20" viewBox="0 0 533.5 544.3" xmlns="http://www.w3.org/2000/svg">
-              <path d="M533.5 278.4c0-17.4-1.5-34.1-4.3-50.4H272.1v95.4h146.9c-6.3 34.1-25.1 62.9-53.5 82.2v68h86.5c50.6-46.6 81.5-115.4 81.5-195.2z" fill="#4285f4" />
-              <path d="M272.1 544.3c72.8 0 133.8-24.1 178.4-65.7l-86.5-68c-24.1 16.3-55 26-91.9 26-70.6 0-130.4-47.6-151.8-111.5H30.6v69.9c44.6 88.5 136.3 148.3 241.5 148.3z" fill="#34a853" />
-              <path d="M120.3 325.1c-11-32.9-11-68.4 0-101.3V154H30.6c-39.2 78.4-39.2 171.8 0 250.2z" fill="#fbbc04" />
-              <path d="M272.1 107.7c38.9-.6 76.1 13.6 104.4 39.8l77.8-77.8C405.7 24.1 344.9 0 272.1 0 166.9 0 75.2 59.8 30.6 148.3l89.7 69.8C141.7 155.3 201.5 107.7 272.1 107.7z" fill="#ea4335" />
-            </svg>
-            Continue with Google
-          </button>
-
-          <div className="footer">
-            Don't have an account?{" "}
-            <button type="button" onClick={() => navigate("/register")}>
-              Create one for free
+            <button
+              type="button"
+              style={{
+                width: "100%",
+                height: 44,
+                backgroundColor: "#FFFFFF",
+                border: "1.5px solid #E8D9C4",
+                borderRadius: 8,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 10,
+                cursor: "pointer",
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 533.5 544.3" xmlns="http://www.w3.org/2000/svg">
+                <path d="M533.5 278.4c0-17.4-1.5-34.1-4.3-50.4H272.1v95.4h146.9c-6.3 34.1-25.1 62.9-53.5 82.2v68h86.5c50.6-46.6 81.5-115.4 81.5-195.2z" fill="#4285f4" />
+                <path d="M272.1 544.3c72.8 0 133.8-24.1 178.4-65.7l-86.5-68c-24.1 16.3-55 26-91.9 26-70.6 0-130.4-47.6-151.8-111.5H30.6v69.9c44.6 88.5 136.3 148.3 241.5 148.3z" fill="#34a853" />
+                <path d="M120.3 325.1c-11-32.9-11-68.4 0-101.3V154H30.6c-39.2 78.4-39.2 171.8 0 250.2z" fill="#fbbc04" />
+                <path d="M272.1 107.7c38.9-.6 76.1 13.6 104.4 39.8l77.8-77.8C405.7 24.1 344.9 0 272.1 0 166.9 0 75.2 59.8 30.6 148.3l89.7 69.8C141.7 155.3 201.5 107.7 272.1 107.7z" fill="#ea4335" />
+              </svg>
+              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#2C1A0E" }}>Continue with Google</span>
             </button>
-          </div>
 
-          <div className="bottom-note">© 2025 BuildrAfrica · Terms · Privacy</div>
+            <div style={{ textAlign: "center", fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#7A5C44" }}>
+              Don't have an account?{" "}
+              <button
+                type="button"
+                onClick={() => navigate("/register")}
+                style={{ background: "transparent", border: "none", color: "#C4622D", fontWeight: 600, cursor: "pointer" }}
+              >
+                Create one for free
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div style={{ padding: 20, textAlign: "center", fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#B09070" }}>
+          © 2025 BuildrAfrica · Terms · Privacy
         </div>
       </div>
     </div>

@@ -1,190 +1,242 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Navbar from "../components/layout/Navbar";
-import { useProjects } from "../store/projectStore";
-import { useAuth } from "../store/authStore";
 import ProjectCard from "../components/dashboard/ProjectCard";
 import NewProjectModal from "../components/dashboard/NewProjectModal";
 import Button from "../components/common/Button";
+import { useProjects } from "../store/projectStore";
+import { useAuth } from "../store/authStore";
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { projects } = useProjects();
+  const { projects, createProject, deleteProject } = useProjects();
+  const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeFilter, setActiveFilter] = useState("all");
-  const [searchTerm, setSearchTerm] = useState("");
 
-  const firstName = user?.name?.split(" ")[0] || "User";
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    return "Good evening";
+  }, []);
 
-  const counts = {
-    total: projects.length,
-    draft: projects.filter(p => p.status === "draft").length,
-    published: projects.filter(p => p.status === "published").length,
-    archived: projects.filter(p => p.status === "archived").length,
-  };
-
-  // Filter projects
-  const filteredProjects = projects.filter(project => {
-    const matchesFilter = activeFilter === "all" || project.status === activeFilter;
-    const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredProjects = projects.filter((p) => {
+    const matchesFilter = filter === "all" ? true : p.status === filter;
+    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
     return matchesFilter && matchesSearch;
   });
 
+  const counts = {
+    total: projects.length,
+    draft: projects.filter((p) => p.status === "draft").length,
+    published: projects.filter((p) => p.status === "published").length,
+    archived: projects.filter((p) => p.status === "archived").length,
+  };
+
+  const handleCreate = (data) => {
+    createProject({
+      name: data.name,
+      description: data.description || "Manage your app seamlessly.",
+      is_public: data.is_public,
+    });
+  };
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  const pageStyle = {
+    minHeight: "100vh",
+    display: "flex",
+    flexDirection: "column",
+    backgroundColor: "#FBF4E9",
+    animation: "pageIn 400ms ease",
+  };
+
+  const heroStyle = {
+    padding: "48px 32px 32px",
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+  };
+
+  const filtersRow = {
+    padding: "0 32px 24px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    flexWrap: "wrap",
+  };
+
+  const filterButton = (key, label) => {
+    const active = filter === key;
+    return (
+      <button
+        key={key}
+        onClick={() => setFilter(key)}
+        style={{
+          padding: "8px 16px",
+          borderRadius: 20,
+          border: `1.5px solid ${active ? "#C4622D" : "#E8D9C4"}`,
+          backgroundColor: active ? "#C4622D" : "#FFFFFF",
+          color: active ? "#FFFFFF" : "#7A5C44",
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: 14,
+          cursor: "pointer",
+          transition: "all 150ms ease",
+        }}
+        onMouseEnter={(e) => {
+          if (!active) {
+            e.currentTarget.style.borderColor = "#C4622D";
+            e.currentTarget.style.color = "#C4622D";
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!active) {
+            e.currentTarget.style.borderColor = "#E8D9C4";
+            e.currentTarget.style.color = "#7A5C44";
+          }
+        }}
+      >
+        {label}
+      </button>
+    );
+  };
+
+  const searchInput = (
+    <div style={{ position: "relative" }}>
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#7A5C44"
+        strokeWidth="2"
+        style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }}
+      >
+        <circle cx="11" cy="11" r="7" />
+        <path d="M16 16l4 4" strokeLinecap="round" />
+      </svg>
+      <input
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search projects..."
+        style={{
+          padding: "8px 16px 8px 38px",
+          border: "1.5px solid #E8D9C4",
+          borderRadius: 20,
+          backgroundColor: "#FFFFFF",
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: 14,
+          outline: "none",
+          width: 240,
+          transition: "border 200ms ease",
+        }}
+        onFocus={(e) => (e.currentTarget.style.borderColor = "#C4622D")}
+        onBlur={(e) => (e.currentTarget.style.borderColor = "#E8D9C4")}
+      />
+    </div>
+  );
+
+  const emptyState = (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "80px 32px",
+        gap: 16,
+      }}
+    >
+      <div style={{ width: 200, height: 200 }}>
+        <svg viewBox="0 0 200 200" width="200" height="200" fill="none">
+          <rect x="30" y="40" width="140" height="120" rx="12" fill="#FFF0E8" stroke="#E8D9C4" strokeWidth="2" />
+          <path d="M50 110h60M50 90h80M50 130h40" stroke="#C4622D" strokeWidth="4" strokeLinecap="round" />
+          <circle cx="140" cy="80" r="14" fill="#D4A017" opacity="0.7" />
+          <path d="M120 140l20 10 20-30" stroke="#2D5A1B" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </div>
+      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, color: "#2C1A0E" }}>No projects yet</div>
+      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#7A5C44" }}>
+        Start building your first application
+      </div>
+      <Button variant="primary" onClick={() => setIsModalOpen(true)}>Create your first app</Button>
+    </div>
+  );
+
   return (
-    <div className="relative min-h-screen grain-overlay overflow-hidden">
-      <div className="absolute -top-32 -left-32 w-80 h-80 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
-      <div className="absolute top-10 right-0 w-72 h-72 rounded-full bg-secondary/20 blur-3xl pointer-events-none" />
+    <div style={pageStyle}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+        @keyframes pageIn { from { opacity:0; transform: translateY(20px);} to { opacity:1; transform: translateY(0);} }
+      `}</style>
 
       <Navbar />
 
-      {/* Main content */}
-      <main className="relative max-w-7xl mx-auto px-6 pb-14 pt-10">
-        {/* Hero */}
-        <section className="grid lg:grid-cols-[1.15fr,0.85fr] gap-6 mb-10">
-          <div className="glass-panel rounded-3xl p-8 relative overflow-hidden">
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute -right-16 -top-10 w-52 h-52 bg-gradient-to-br from-primary/40 to-secondary/30 blur-3xl" />
-              <div className="absolute -left-10 bottom-0 w-40 h-40 bg-green/10 blur-3xl" />
-            </div>
-            <div className="relative">
-              <p className="text-xs font-semibold tracking-[0.28em] uppercase text-text-muted mb-3">
-                Bonjour, {firstName}
-              </p>
-              <h1 className="text-4xl md:text-[42px] font-playfair-display font-bold text-text leading-tight mb-4">
-                Construisons votre prochaine app sans coder
-              </h1>
-              <p className="text-text-muted max-w-2xl mb-6">
-                Assemblez les écrans, les données et les workflows en quelques minutes.
-                Nous avons préparé des composants prêts à l'emploi pour vous lancer vite.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  variant="primary"
-                  size="lg"
-                  onClick={() => setIsModalOpen(true)}
-                  className="px-6"
-                >
-                  + Nouveau projet
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="lg"
-                  onClick={() => {
-                    setActiveFilter("draft");
-                    setSearchTerm("");
-                  }}
-                >
-                  Voir les brouillons
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
-            {[
-              { label: "Projets", value: counts.total, hint: "actifs" },
-              { label: "Brouillons", value: counts.draft, hint: "à finaliser" },
-              { label: "En ligne", value: counts.published, hint: "visibles" },
-              { label: "Archivés", value: counts.archived, hint: "en sauvegarde" },
-            ].map((card) => (
-              <div key={card.label} className="glass-panel rounded-2xl p-4 flex flex-col gap-1">
-                <p className="text-xs uppercase tracking-wide text-text-muted font-semibold">{card.label}</p>
-                <div className="flex items-end gap-2">
-                  <span className="text-3xl font-playfair-display text-text">{card.value}</span>
-                  <span className="text-sm text-text-muted">{card.hint}</span>
-                </div>
-                <div className="h-1.5 w-full bg-border rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-primary to-primary-dark rounded-full"
-                    style={{ width: `${Math.min(card.value || 0, 8) * 12.5}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Filters & search */}
-        <div className="glass-panel rounded-2xl p-4 mb-6 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
-          <div className="flex flex-wrap gap-2">
-            {[
-              { key: "all", label: "Tous" },
-              { key: "draft", label: "Brouillon" },
-              { key: "published", label: "En ligne" },
-              { key: "archived", label: "Archive" },
-            ].map((status) => (
-              <button
-                key={status.key}
-                onClick={() => setActiveFilter(status.key)}
-                className={`px-4 py-2 pill font-dm-sans text-sm font-semibold transition-all ${
-                  activeFilter === status.key
-                    ? "bg-primary text-white shadow-md shadow-primary/25"
-                    : "bg-white/70 text-text-muted hover:text-text"
-                }`}
-              >
-                {status.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="relative w-full md:w-72">
-            <svg
-              className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-text-muted"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Rechercher un projet..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 bg-white/80 font-dm-sans shadow-inner"
-            />
-          </div>
-        </div>
-
-        {/* Projects grid */}
-        {filteredProjects.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-            {filteredProjects.map((project) => (
-              <ProjectCard key={project.tracking_id} project={project} />
-            ))}
-          </div>
-        ) : searchTerm ? (
-          <div className="glass-panel rounded-3xl p-10 text-center">
-            <svg
-              className="w-16 h-16 mx-auto text-text-muted mb-4 opacity-60"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <p className="text-text-muted font-dm-sans">Aucun projet ne correspond à votre recherche.</p>
-          </div>
-        ) : (
-          <div className="glass-panel rounded-3xl p-12 text-center">
-            <svg
-              className="w-16 h-16 mx-auto text-text-muted mb-4 opacity-60"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            <p className="text-text mb-3 font-playfair-display text-xl">Créez votre première app</p>
-            <p className="text-text-muted mb-4 font-dm-sans">Lancez un projet et voyez votre interface prendre forme.</p>
-            <Button variant="primary" onClick={() => setIsModalOpen(true)}>
-              Démarrer un projet
+      <section style={heroStyle}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 6,
+          }}
+        >
+          <h1 style={{ margin: 0, fontFamily: "'Playfair Display', serif", fontSize: 40, color: "#2C1A0E" }}>
+            {greeting}, {user?.name?.split(" ")[0] || "builder"} 👋
+          </h1>
+          <p style={{ margin: 0, fontFamily: "'DM Sans', sans-serif", fontSize: 16, color: "#7A5C44" }}>
+            What are you building today?
+          </p>
+          <div style={{ marginTop: 16 }}>
+            <Button variant="primary" onClick={() => setIsModalOpen(true)} size="md">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2">
+                <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+              </svg>
+              New Project
             </Button>
           </div>
-        )}
-      </main>
+        </div>
+      </section>
 
-      {/* Modal */}
-      <NewProjectModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <section style={filtersRow}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {filterButton("all", `All (${counts.total})`)}
+          {filterButton("draft", `Draft (${counts.draft})`)}
+          {filterButton("published", `Published (${counts.published})`)}
+          {filterButton("archived", `Archived (${counts.archived})`)}
+        </div>
+        {searchInput}
+      </section>
+
+      <section
+        style={{
+          padding: "0 32px 48px",
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gap: 24,
+          flex: 1,
+        }}
+      >
+        {filteredProjects.length === 0 ? (
+          <div style={{ gridColumn: "1 / -1" }}>{emptyState}</div>
+        ) : (
+          filteredProjects.map((project) => (
+            <ProjectCard
+              key={project.tracking_id}
+              project={project}
+              onDelete={(id) => deleteProject(id)}
+            />
+          ))
+        )}
+      </section>
+
+      <NewProjectModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onCreate={handleCreate}
+      />
     </div>
   );
 }

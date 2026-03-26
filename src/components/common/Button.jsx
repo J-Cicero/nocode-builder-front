@@ -7,63 +7,105 @@ export default function Button({
   onClick,
   type = "button",
   children,
-  className = "",
+  style = {},
 }) {
-  const baseStyles =
-    "font-medium transition-all duration-200 flex items-center justify-center gap-2 rounded-lg font-dm-sans active:translate-y-px";
-
-  const variantStyles = {
-    primary:
-      "bg-gradient-to-r from-primary to-primary-dark text-white shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed",
-    secondary:
-      "border border-primary text-primary bg-white/90 hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed",
-    danger: "bg-error text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
-    ghost: "bg-transparent text-text-muted hover:text-text hover:bg-border/60 disabled:opacity-50 disabled:cursor-not-allowed",
+  const baseStyle = {
+    border: "none",
+    outline: "none",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderRadius: 8,
+    fontFamily: "'DM Sans', sans-serif",
+    fontWeight: 500,
+    cursor: disabled ? "not-allowed" : "pointer",
+    transition: "all 150ms ease",
+    transform: loading ? "translateY(0)" : "none",
+    opacity: disabled ? 0.6 : 1,
+    width: fullWidth ? "100%" : "auto",
   };
 
-  const sizeStyles = {
-    sm: "px-3 py-2 text-sm",
-    md: "px-4 py-2.5 text-base",
-    lg: "px-6 py-3 text-lg",
+  const variantStyle = {
+    primary: {
+      backgroundColor: "#C4622D",
+      color: "#FFFFFF",
+      boxShadow: "0 6px 18px rgba(196,98,45,0.25)",
+    },
+    secondary: {
+      backgroundColor: "transparent",
+      border: "1.5px solid #C4622D",
+      color: "#C4622D",
+    },
+    danger: {
+      backgroundColor: "#B03030",
+      color: "#FFFFFF",
+    },
+    ghost: {
+      backgroundColor: "transparent",
+      border: "1.5px solid #E8D9C4",
+      color: "#7A5C44",
+    },
+  }[variant];
+
+  const sizeStyle = {
+    sm: { padding: "6px 14px", fontSize: 13 },
+    md: { padding: "10px 20px", fontSize: 15 },
+    lg: { padding: "14px 28px", fontSize: 16 },
+  }[size];
+
+  const handleMouseEnter = (e) => {
+    if (disabled) return;
+    e.currentTarget.style.transform = "translateY(-2px)";
+    if (variant === "primary") e.currentTarget.style.backgroundColor = "#A04E22";
   };
 
-  const widthClass = fullWidth ? "w-full" : "";
-  const disabledClass = disabled ? "opacity-50 cursor-not-allowed" : "";
+  const handleMouseLeave = (e) => {
+    if (disabled) return;
+    e.currentTarget.style.transform = "none";
+    if (variant === "primary") e.currentTarget.style.backgroundColor = "#C4622D";
+  };
+
+  const handleMouseDown = (e) => {
+    if (disabled) return;
+    e.currentTarget.style.transform = "translateY(1px)";
+  };
+
+  const handleMouseUp = (e) => {
+    if (disabled) return;
+    e.currentTarget.style.transform = "translateY(-2px)";
+  };
 
   return (
     <button
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
-      className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${widthClass} ${disabledClass} ${className}`}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
+      style={{ ...baseStyle, ...variantStyle, ...sizeStyle, ...style }}
     >
       {loading ? (
         <>
           <svg
-            className="animate-spin h-4 w-4"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
+            width="16"
+            height="16"
             viewBox="0 0 24 24"
+            style={{ animation: "spin 0.8s linear infinite" }}
           >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            ></circle>
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
+            <circle cx="12" cy="12" r="10" stroke="#FFFFFF" strokeWidth="3" opacity="0.25" fill="none" />
+            <path d="M12 2a10 10 0 0 1 10 10" stroke="#FFFFFF" strokeWidth="3" fill="none" />
           </svg>
           Loading...
         </>
       ) : (
         children
       )}
+      <style>{`
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
     </button>
   );
 }

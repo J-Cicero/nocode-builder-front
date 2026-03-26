@@ -3,17 +3,18 @@ import { useAuth } from "../../store/authStore";
 import Loader from "../common/Loader";
 
 export default function ProtectedRoute() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { token, isLoading } = useAuth();
+  const hasToken = token || localStorage.getItem("access_token");
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
         <Loader size={50} />
       </div>
     );
   }
 
-  if (!isAuthenticated) {
+  if (!hasToken) {
     return <Navigate to="/login" replace />;
   }
 

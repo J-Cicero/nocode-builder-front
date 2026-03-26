@@ -1,47 +1,65 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 
 const ProjectContext = createContext();
 
-const MOCK_PROJECTS = [
+const DEFAULT_PROJECTS = [
   {
-    tracking_id: "proj-001",
+    tracking_id: "p1",
     name: "Salon Manager",
-    description: "App to manage hair salon appointments",
+    description: "Manage appointments and clients",
     status: "published",
     is_public: false,
-    created_at: "2025-01-15T10:00:00Z",
+    created_at: "2025-01-15",
     config: { theme: { primary_color: "#C4622D" }, pages: [], datasources: [] }
   },
   {
-    tracking_id: "proj-002",
-    name: "Market Inventory",
-    description: "Track market stock and sales",
+    tracking_id: "p2",
+    name: "Inventory App",
+    description: "Track products and stock levels",
     status: "draft",
     is_public: false,
-    created_at: "2025-02-20T14:30:00Z",
+    created_at: "2025-02-20",
     config: { theme: { primary_color: "#2D5A1B" }, pages: [], datasources: [] }
   },
   {
-    tracking_id: "proj-003",
-    name: "School Portal",
-    description: "Student and teacher management",
+    tracking_id: "p3",
+    name: "Event Planner",
+    description: "Organize community events",
     status: "archived",
     is_public: true,
-    created_at: "2025-03-01T09:00:00Z",
+    created_at: "2025-03-01",
     config: { theme: { primary_color: "#D4A017" }, pages: [], datasources: [] }
   }
 ];
 
 export function ProjectProvider({ children }) {
-  const [projects, setProjects] = useState(MOCK_PROJECTS);
+  const [projects, setProjects] = useState(DEFAULT_PROJECTS);
   const [currentProject, setCurrentProject] = useState(null);
   const [activeTab, setActiveTab] = useState("tables");
 
+  // Charger les projets depuis localStorage au montage
+  useEffect(() => {
+    const storedProjects = localStorage.getItem("projects");
+    if (storedProjects) {
+      try {
+        setProjects(JSON.parse(storedProjects));
+      } catch (error) {
+        console.error("Erreur parsing stored projects:", error);
+        localStorage.removeItem("projects");
+      }
+    }
+  }, []);
+
+  // Sauvegarder les projets dans localStorage quand ils changent
+  useEffect(() => {
+    localStorage.setItem("projects", JSON.stringify(projects));
+  }, [projects]);
+
   const createProject = (data) => {
     const newProject = {
-      tracking_id: `proj-${Date.now()}`,
+      tracking_id: `p-${Date.now()}`,
       name: data.name,
-      description: data.description || "",
+      description: data.description || "Manage your app seamlessly.",
       status: "draft",
       is_public: data.is_public || false,
       created_at: new Date().toISOString(),
