@@ -24,6 +24,267 @@ import { useSchema } from "../hooks/useSchema";
 import { useWorkflows } from "../hooks/useWorkflows";
 import Loader from "../components/common/Loader";
 
+// ───────────────────────── ICONS ───────────────────────────────
+const IconBack = ({ color = "#2C1A0E" }) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M15 18l-6-6 6-6" />
+  </svg>
+);
+
+const IconChevron = ({ color = "#7A5C44" }) => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M6 9l6 6 6-6" />
+  </svg>
+);
+
+const IconGrip = ({ color = "#FFFFFF", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <circle cx="8" cy="7" r="1" />
+    <circle cx="8" cy="12" r="1" />
+    <circle cx="8" cy="17" r="1" />
+    <circle cx="16" cy="7" r="1" />
+    <circle cx="16" cy="12" r="1" />
+    <circle cx="16" cy="17" r="1" />
+  </svg>
+);
+
+const IconAlignLeft = ({ color = "#FFFFFF", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M4 6h16M4 12h10M4 18h16" />
+  </svg>
+);
+
+const IconAlignCenter = ({ color = "#FFFFFF", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M4 6h16M7 12h10M4 18h16" />
+  </svg>
+);
+
+const IconAlignRight = ({ color = "#FFFFFF", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M4 6h16M10 12h10M4 18h16" />
+  </svg>
+);
+
+const IconMinus = ({ color = "#FFFFFF", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M5 12h14" />
+  </svg>
+);
+
+const IconPlus = ({ color = "#FFFFFF", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M12 5v14M5 12h14" />
+  </svg>
+);
+
+const IconBox = ({ color = "#C4622D", size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M3 7l9 4 9-4-9-4-9 4v10l9 4 9-4V7" />
+  </svg>
+);
+
+const IconColumns = ({ color = "#C4622D", size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <rect x="3" y="4" width="7" height="16" rx="1.5" />
+    <rect x="14" y="4" width="7" height="16" rx="1.5" />
+  </svg>
+);
+
+const IconDivider = ({ color = "#C4622D", size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <line x1="4" y1="12" x2="20" y2="12" />
+    <circle cx="6" cy="12" r="1.5" />
+    <circle cx="18" cy="12" r="1.5" />
+  </svg>
+);
+
+const IconSpacer = ({ color = "#C4622D", size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M4 4h16M4 20h16M12 8v8" />
+    <path d="M9 11l3-3 3 3M9 13l3 3 3-3" />
+  </svg>
+);
+
+const IconInput = ({ color = "#C4622D", size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <rect x="3" y="7" width="18" height="10" rx="2" />
+    <line x1="6" y1="12" x2="9" y2="12" />
+  </svg>
+);
+
+const IconButton = ({ color = "#C4622D", size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <rect x="4" y="8" width="16" height="8" rx="3" />
+  </svg>
+);
+
+const IconDropdown = ({ color = "#C4622D", size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <rect x="3" y="6" width="18" height="12" rx="2" />
+    <path d="M8 10l4 4 4-4" />
+  </svg>
+);
+
+const IconCheckbox = ({ color = "#C4622D", size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <rect x="4" y="4" width="16" height="16" rx="3" />
+    <path d="M8 12l3 3 5-5" />
+  </svg>
+);
+
+const IconTextarea = ({ color = "#C4622D", size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <rect x="4" y="4" width="16" height="16" rx="2" />
+    <path d="M8 8h8M8 12h8M8 16h5" />
+  </svg>
+);
+
+const IconUpload = ({ color = "#C4622D", size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M12 16V4" />
+    <path d="M7 9l5-5 5 5" />
+    <path d="M5 20h14" />
+  </svg>
+);
+
+const IconTitle = ({ color = "#C4622D", size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M4 6h16M10 6v12" />
+  </svg>
+);
+
+const IconText = ({ color = "#C4622D", size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M5 7h14M5 12h10M5 17h8" />
+  </svg>
+);
+
+const IconImage = ({ color = "#C4622D", size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <rect x="4" y="5" width="16" height="14" rx="2" />
+    <circle cx="9" cy="10" r="1.5" />
+    <path d="M4 16l5-4 3 3 4-3 4 4" />
+  </svg>
+);
+
+const IconTable = ({ color = "#C4622D", size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <rect x="3" y="4" width="18" height="16" rx="2" />
+    <path d="M3 10h18M9 4v16M15 4v16" />
+  </svg>
+);
+
+const IconCard = ({ color = "#C4622D", size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <rect x="4" y="5" width="16" height="14" rx="3" />
+    <path d="M8 9h8M8 13h5" />
+  </svg>
+);
+
+const IconBadge = ({ color = "#C4622D", size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <rect x="5" y="9" width="14" height="6" rx="3" />
+  </svg>
+);
+
+const IconBar = ({ color = "#C4622D", size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M5 20v-8M12 20v-14M19 20v-4" />
+  </svg>
+);
+
+const IconLine = ({ color = "#C4622D", size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M4 16l5-5 4 3 7-7" />
+    <circle cx="4" cy="16" r="1.5" />
+    <circle cx="9" cy="11" r="1.5" />
+    <circle cx="13" cy="14" r="1.5" />
+    <circle cx="20" cy="7" r="1.5" />
+  </svg>
+);
+
+const IconPie = ({ color = "#C4622D", size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M11 3a9 9 0 0 1 9 9h-9z" />
+    <path d="M11 3a9 9 0 1 0 9 9h-9z" />
+  </svg>
+);
+
+const IconPlusCircle = ({ color = "#C4622D", size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 8v8M8 12h8" />
+  </svg>
+);
+
+const IconCursor = ({ color = "#C4622D", size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M4 4l7 18 2-7 7-2z" />
+  </svg>
+);
+
+const IconArrowUp = ({ color = "#FFFFFF", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M12 19V5M5 12l7-7 7 7" />
+  </svg>
+);
+
+const IconArrowDown = ({ color = "#FFFFFF", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M12 5v14M19 12l-7 7-7-7" />
+  </svg>
+);
+
+const IconDuplicate = ({ color = "#FFFFFF", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <rect x="8" y="8" width="12" height="12" rx="2" />
+    <path d="M4 4h12v12" />
+  </svg>
+);
+
+const IconTrash = ({ color = "#B03030", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M4 7h16" />
+    <path d="M10 11v6M14 11v6" />
+    <path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" />
+    <path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+  </svg>
+);
+
+const IconClose = ({ color = "#7A5C44", size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M6 6l12 12M6 18L18 6" />
+  </svg>
+);
+
+const IconEdit = ({ color = "#7A5C44", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M12 20h9" />
+    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+  </svg>
+);
+
+const IconBrain = ({ color = "#D4A017", size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M9 3a3 3 0 0 0-3 3v1a3 3 0 0 0-2 2.8A3 3 0 0 0 6 12a3 3 0 0 0 1 5.8V18a3 3 0 0 0 6 0v-1.2A3 3 0 0 0 16 14a3 3 0 0 0 2-2.2A3 3 0 0 0 16 9V8a3 3 0 0 0-3-3" />
+    <path d="M9 8h2M9 12h6M9 16h2" />
+  </svg>
+);
+
+const IconSend = ({ color = "#FFFFFF", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M22 2L11 13" />
+    <path d="M22 2L15 22l-4-9-9-4z" />
+  </svg>
+);
+
+const IconLightning = ({ color = "#C4622D", size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" />
+  </svg>
+);
+
 export default function EditorPage() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -474,11 +735,96 @@ export default function EditorPage() {
     const list = componentsByPage[activePageId] || [];
     const comp = list.find((c) => c.tracking_id === id);
     if (!comp) return;
+
+    const toDim = (value, fallback = "auto") => {
+      if (value === null || value === undefined) return fallback;
+      const raw = String(value).trim();
+      if (!raw) return fallback;
+      if (/^\d+(\.\d+)?$/.test(raw)) return `${raw}px`;
+      return raw;
+    };
+
+    const layoutPatch = {};
+    if (Object.prototype.hasOwnProperty.call(updater, "width")) {
+      layoutPatch.largeur = toDim(updater.width, comp.largeur || "100%");
+    }
+    if (Object.prototype.hasOwnProperty.call(updater, "height")) {
+      layoutPatch.hauteur = toDim(updater.height, comp.hauteur || "auto");
+    }
+    if (Object.prototype.hasOwnProperty.call(updater, "x")) {
+      layoutPatch.position_x = Number(updater.x) || 0;
+    }
+    if (Object.prototype.hasOwnProperty.call(updater, "y")) {
+      layoutPatch.position_y = Number(updater.y) || 0;
+    }
+
+    const propsUpdater = { ...updater };
+    delete propsUpdater.width;
+    delete propsUpdater.height;
+    delete propsUpdater.x;
+    delete propsUpdater.y;
+
     const newConfig = {
       ...(comp.config || {}),
-      props: { ...(comp.config?.props || {}), ...updater },
+      props: { ...(comp.config?.props || {}), ...propsUpdater },
     };
-    await updateComponentApi(id, { config: newConfig }, activePageId);
+    const payload = { ...layoutPatch, config: newConfig };
+    await updateComponentApi(id, payload, activePageId);
+  };
+
+  const updateComponentLayoutQuick = async (id, patch) => {
+    const list = componentsByPage[activePageId] || [];
+    const comp = list.find((c) => c.tracking_id === id);
+    if (!comp) return;
+
+    const toNumberOrDefault = (value, fallback) => {
+      const next = Number(value);
+      return Number.isFinite(next) ? next : fallback;
+    };
+
+    const parseDimPx = (value, fallback) => {
+      const raw = String(value || "").trim();
+      if (!raw) return fallback;
+      if (raw.endsWith("px")) {
+        const parsed = Number(raw.replace("px", ""));
+        return Number.isFinite(parsed) ? parsed : fallback;
+      }
+      const parsed = Number(raw);
+      return Number.isFinite(parsed) ? parsed : fallback;
+    };
+
+    const payload = {};
+    if (Object.prototype.hasOwnProperty.call(patch, "position_x")) {
+      payload.position_x = toNumberOrDefault(patch.position_x, comp.position_x || 0);
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "position_y")) {
+      payload.position_y = toNumberOrDefault(patch.position_y, comp.position_y || 0);
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "largeur")) {
+      const currentWidthPx = parseDimPx(comp.largeur || "100%", 100);
+      const targetWidthPx = Math.max(
+        80,
+        toNumberOrDefault(patch.largeur, currentWidthPx)
+      );
+      payload.largeur = `${targetWidthPx}px`;
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "hauteur")) {
+      const currentHeightPx = parseDimPx(comp.hauteur || "120px", 120);
+      const targetHeightPx = Math.max(
+        40,
+        toNumberOrDefault(patch.hauteur, currentHeightPx)
+      );
+      payload.hauteur = `${targetHeightPx}px`;
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "align")) {
+      payload.config = {
+        ...(comp.config || {}),
+        props: { ...(comp.config?.props || {}), align: patch.align },
+      };
+    }
+
+    if (Object.keys(payload).length === 0) return;
+    await updateComponentApi(id, payload, activePageId);
   };
 
   const addPage = async () => {
@@ -719,6 +1065,7 @@ export default function EditorPage() {
                 onDelete={removeComponent}
                 onDuplicate={duplicateComponent}
                 onMove={moveComponent}
+                onQuickUpdate={updateComponentLayoutQuick}
                 loading={loadingInterface}
                 error={interfaceError || interfaceActionError}
               />
@@ -1207,6 +1554,7 @@ function CanvasArea({
   onDelete,
   onDuplicate,
   onMove,
+  onQuickUpdate,
   loading,
   error,
 }) {
@@ -1221,9 +1569,14 @@ function CanvasArea({
         borderRadius: 16,
         boxShadow: "0 8px 40px rgba(26,14,10,0.2)",
         transition: "width 300ms ease",
-        overflow: "hidden",
+        overflow: "auto",
         position: "relative",
         border: isOver ? "2px dashed #C4622D" : "none",
+        padding: 12,
+        display: "flex",
+        flexWrap: "wrap",
+        alignContent: "flex-start",
+        gap: 12,
       }}
       id="canvas-frame"
     >
@@ -1265,6 +1618,7 @@ function CanvasArea({
               onDuplicate={() => onDuplicate(component.tracking_id)}
               onMoveUp={() => onMove(component.tracking_id, "up")}
               onMoveDown={() => onMove(component.tracking_id, "down")}
+              onQuickUpdate={(patch) => onQuickUpdate(component.tracking_id, patch)}
             />
           ))
         ) : (
@@ -1283,6 +1637,7 @@ function CanvasItem({
   onDuplicate,
   onMoveUp,
   onMoveDown,
+  onQuickUpdate,
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: component.tracking_id,
@@ -1291,22 +1646,27 @@ function CanvasItem({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    padding: "12px 16px",
-    borderBottom: "1px solid #F5F0EB",
+    padding: "10px",
     cursor: "pointer",
     position: "relative",
     backgroundColor: isSelected ? "#FFFAF8" : isDragging ? "#FFF5EF" : "transparent",
     outline: isSelected ? "2px dashed #C4622D" : "none",
     outlineOffset: isSelected ? 2 : 0,
+    border: "1px solid #F1E5D8",
+    borderRadius: 10,
+    width: component.largeur || "100%",
+    minHeight: component.hauteur && component.hauteur !== "auto" ? component.hauteur : "auto",
+    flex: component.largeur ? "0 0 auto" : "1 1 100%",
+    maxWidth: "100%",
   };
 
   return (
-    <div ref={setNodeRef} {...attributes} {...listeners} style={style} onClick={onSelect}>
+    <div ref={setNodeRef} {...attributes} style={style} onClick={onSelect}>
       {isSelected && (
         <div
           style={{
             position: "absolute",
-            top: -32,
+            top: 8,
             right: 12,
             backgroundColor: "#1A0E0A",
             borderRadius: 6,
@@ -1314,8 +1674,20 @@ function CanvasItem({
             display: "flex",
             gap: 4,
             boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            zIndex: 4,
           }}
         >
+          <ToolbarButton
+            icon={<IconGrip color="#FFFFFF" />}
+            onClick={() => {}}
+            dragHandleProps={{ ...listeners }}
+            title="Drag"
+          />
+          <ToolbarButton icon={<IconAlignLeft color="#FFFFFF" />} onClick={() => onQuickUpdate({ align: "left" })} />
+          <ToolbarButton icon={<IconAlignCenter color="#FFFFFF" />} onClick={() => onQuickUpdate({ align: "center" })} />
+          <ToolbarButton icon={<IconAlignRight color="#FFFFFF" />} onClick={() => onQuickUpdate({ align: "right" })} />
+          <ToolbarButton icon={<IconMinus color="#FFFFFF" />} onClick={() => onQuickUpdate({ largeur: parsePixels(component.largeur, 100) - 24 })} />
+          <ToolbarButton icon={<IconPlus color="#FFFFFF" />} onClick={() => onQuickUpdate({ largeur: parsePixels(component.largeur, 100) + 24 })} />
           <ToolbarButton icon={<IconArrowUp color="#FFFFFF" />} onClick={onMoveUp} />
           <ToolbarButton icon={<IconArrowDown color="#FFFFFF" />} onClick={onMoveDown} />
           <ToolbarButton icon={<IconDuplicate color="#FFFFFF" />} onClick={onDuplicate} />
@@ -1327,13 +1699,15 @@ function CanvasItem({
   );
 }
 
-function ToolbarButton({ icon, onClick }) {
+function ToolbarButton({ icon, onClick, dragHandleProps, title }) {
   return (
     <button
+      title={title}
       onClick={(e) => {
         e.stopPropagation();
         onClick();
       }}
+      {...(dragHandleProps || {})}
       style={{
         background: "none",
         border: "none",
@@ -1377,6 +1751,7 @@ function EmptyCanvas() {
 }
 
 function PropertiesPanel({ component, updateProps }) {
+  component = component ? normalizeEditorComponent(component) : null;
   const labelStyle = {
     fontFamily: "'DM Sans', sans-serif",
     fontSize: 11,
@@ -1489,8 +1864,13 @@ function PropertiesPanel({ component, updateProps }) {
   const commonLayout = (
     <>
       {renderSectionHeader("Layout")}
-      {renderInput("Width", component?.props?.width || "", (v) => updateProps({ width: v }))}
-      {renderInput("Height", component?.props?.height || "", (v) => updateProps({ height: v }))}
+      {renderInput("Width", component?.largeur || "100%", (v) => updateProps({ width: v }))}
+      {renderInput("Height", component?.hauteur || "auto", (v) => updateProps({ height: v }))}
+      {renderInput("Position X", component?.position_x ?? 0, (v) => updateProps({ x: v }), "number")}
+      {renderInput("Position Y", component?.position_y ?? 0, (v) => updateProps({ y: v }), "number")}
+      {renderInput("Align (left/center/right)", component?.props?.align || "left", (v) =>
+        updateProps({ align: String(v || "left").toLowerCase() })
+      )}
       <div style={{ padding: "10px 16px" }}>
         <span style={labelStyle}>Padding</span>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, marginTop: 6 }}>
@@ -1569,7 +1949,7 @@ function PropertiesPanel({ component, updateProps }) {
 
   const renderTypeSpecific = () => {
     if (!component) return null;
-    switch (component.type) {
+    switch (component.uiType) {
       case "button":
         return (
           <>
@@ -2599,24 +2979,75 @@ function TypingDots() {
 }
 
 // ───────────────────── RENDER PREVIEWS ────────────────────────
-function renderComponentPreview(component) {
-  // backend returns config; props are stored inside config.props
-  if (component.config?.props && !component.props) {
-    component = { ...component, props: component.config.props };
+function parsePixels(value, fallback = 0) {
+  const raw = String(value || "").trim();
+  if (!raw) return fallback;
+  if (raw.endsWith("px")) {
+    const parsed = Number(raw.replace("px", ""));
+    return Number.isFinite(parsed) ? parsed : fallback;
   }
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function mapBackendTypeToUiType(backendType) {
+  switch (String(backendType || "").toLowerCase()) {
+    case "texte":
+      return "text";
+    case "bouton":
+      return "button";
+    case "champ_input":
+      return "input";
+    case "liste":
+      return "dataList";
+    case "carte":
+      return "card";
+    case "image":
+      return "image";
+    case "navigation":
+      return "container";
+    case "conteneur":
+      return "container";
+    default:
+      return "container";
+  }
+}
+
+function normalizeEditorComponent(component) {
+  const uiType = component?.config?.uiType || mapBackendTypeToUiType(component?.type);
+  return {
+    ...component,
+    uiType,
+    props: component?.config?.props || component?.props || {},
+  };
+}
+
+function renderComponentPreview(component) {
+  component = normalizeEditorComponent(component);
   const commonBox = {
     borderRadius: component.props.radius || 8,
     backgroundColor: component.props.background || "transparent",
-    padding: component.props.padding || 0,
+    padding: component.props.padding || "8px",
     margin: component.props.margin || 0,
     boxShadow: component.props.shadow ? "0 6px 16px rgba(0,0,0,0.08)" : "none",
     opacity: component.props.opacity ? component.props.opacity / 100 : 1,
+    width: "100%",
+    minHeight: component.hauteur && component.hauteur !== "auto" ? component.hauteur : "auto",
+    maxWidth: "100%",
   };
 
-  switch (component.type) {
+  const align = component.props.align || "left";
+  const alignWrapperStyle = {
+    display: "flex",
+    justifyContent: align === "center" ? "center" : align === "right" ? "flex-end" : "flex-start",
+    width: "100%",
+  };
+
+  switch (component.uiType) {
     case "title":
       return (
-        <div style={{ ...commonBox }}>
+        <div style={alignWrapperStyle}>
+          <div style={{ ...commonBox }}>
           <div
             style={{
               fontFamily: "'Playfair Display', serif",
@@ -2629,11 +3060,13 @@ function renderComponentPreview(component) {
           >
             {component.props.text || "Page Title"}
           </div>
+          </div>
         </div>
       );
     case "text":
       return (
-        <div style={{ ...commonBox }}>
+        <div style={alignWrapperStyle}>
+          <div style={{ ...commonBox }}>
           <div
             style={{
               fontFamily: "'DM Sans', sans-serif",
@@ -2646,11 +3079,13 @@ function renderComponentPreview(component) {
             {component.props.text ||
               "Lorem ipsum dolor sit amet, consectetur adipiscing elit."}
           </div>
+          </div>
         </div>
       );
     case "button":
       return (
-        <div style={{ ...commonBox }}>
+        <div style={alignWrapperStyle}>
+          <div style={{ ...commonBox }}>
           <button
             style={{
               backgroundColor:
@@ -2679,11 +3114,13 @@ function renderComponentPreview(component) {
           >
             {component.props.label || "Button"}
           </button>
+          </div>
         </div>
       );
     case "input":
       return (
-        <div style={{ ...commonBox, display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={alignWrapperStyle}>
+          <div style={{ ...commonBox, display: "flex", flexDirection: "column", gap: 6 }}>
           <label style={{ fontFamily: "'DM Sans', sans-serif", color: "#7A5C44", fontSize: 13 }}>
             {component.props.label || "Field Label"}
           </label>
@@ -2699,11 +3136,13 @@ function renderComponentPreview(component) {
           {component.props.helper && (
             <span style={{ color: "#B09070", fontSize: 12 }}>{component.props.helper}</span>
           )}
+          </div>
         </div>
       );
     case "textarea":
       return (
-        <div style={{ ...commonBox, display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={alignWrapperStyle}>
+          <div style={{ ...commonBox, display: "flex", flexDirection: "column", gap: 6 }}>
           <label style={{ fontFamily: "'DM Sans', sans-serif", color: "#7A5C44", fontSize: 13 }}>
             {component.props.label || "Text Area"}
           </label>
@@ -2720,11 +3159,13 @@ function renderComponentPreview(component) {
           {component.props.helper && (
             <span style={{ color: "#B09070", fontSize: 12 }}>{component.props.helper}</span>
           )}
+          </div>
         </div>
       );
     case "dropdown":
       return (
-        <div style={{ ...commonBox, display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={alignWrapperStyle}>
+          <div style={{ ...commonBox, display: "flex", flexDirection: "column", gap: 6 }}>
           <label style={{ fontFamily: "'DM Sans', sans-serif", color: "#7A5C44", fontSize: 13 }}>
             {component.props.label || "Select"}
           </label>
@@ -2738,15 +3179,18 @@ function renderComponentPreview(component) {
           >
             <option>{component.props.placeholder || "Choose an option"}</option>
           </select>
+          </div>
         </div>
       );
     case "checkbox":
       return (
-        <div style={{ ...commonBox, display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={alignWrapperStyle}>
+          <div style={{ ...commonBox, display: "flex", alignItems: "center", gap: 10 }}>
           <input type="checkbox" />
           <span style={{ fontFamily: "'DM Sans', sans-serif", color: "#2C1A0E" }}>
             {component.props.label || "Checkbox label"}
           </span>
+          </div>
         </div>
       );
     case "image":
@@ -2924,227 +3368,10 @@ function renderComponentPreview(component) {
         </div>
       );
     default:
-      return <div>Component</div>;
+      return (
+        <div style={{ ...commonBox, border: "1px dashed #E8D9C4", color: "#7A5C44" }}>
+          {component.uiType || "component"}
+        </div>
+      );
   }
 }
-
-// ───────────────────────── ICONS ───────────────────────────────
-const IconBack = ({ color = "#2C1A0E" }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M15 18l-6-6 6-6" />
-  </svg>
-);
-
-const IconChevron = ({ color = "#7A5C44" }) => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M6 9l6 6 6-6" />
-  </svg>
-);
-
-const IconBox = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M3 7l9 4 9-4-9-4-9 4v10l9 4 9-4V7" />
-  </svg>
-);
-
-const IconColumns = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <rect x="3" y="4" width="7" height="16" rx="1.5" />
-    <rect x="14" y="4" width="7" height="16" rx="1.5" />
-  </svg>
-);
-
-const IconDivider = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <line x1="4" y1="12" x2="20" y2="12" />
-    <circle cx="6" cy="12" r="1.5" />
-    <circle cx="18" cy="12" r="1.5" />
-  </svg>
-);
-
-const IconSpacer = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M4 4h16M4 20h16M12 8v8" />
-    <path d="M9 11l3-3 3 3M9 13l3 3 3-3" />
-  </svg>
-);
-
-const IconInput = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <rect x="3" y="7" width="18" height="10" rx="2" />
-    <line x1="6" y1="12" x2="9" y2="12" />
-  </svg>
-);
-
-const IconButton = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <rect x="4" y="8" width="16" height="8" rx="3" />
-  </svg>
-);
-
-const IconDropdown = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <rect x="3" y="6" width="18" height="12" rx="2" />
-    <path d="M8 10l4 4 4-4" />
-  </svg>
-);
-
-const IconCheckbox = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <rect x="4" y="4" width="16" height="16" rx="3" />
-    <path d="M8 12l3 3 5-5" />
-  </svg>
-);
-
-const IconTextarea = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <rect x="4" y="4" width="16" height="16" rx="2" />
-    <path d="M8 8h8M8 12h8M8 16h5" />
-  </svg>
-);
-
-const IconUpload = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M12 16V4" />
-    <path d="M7 9l5-5 5 5" />
-    <path d="M5 20h14" />
-  </svg>
-);
-
-const IconTitle = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M4 6h16M10 6v12" />
-  </svg>
-);
-
-const IconText = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M5 7h14M5 12h10M5 17h8" />
-  </svg>
-);
-
-const IconImage = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <rect x="4" y="5" width="16" height="14" rx="2" />
-    <circle cx="9" cy="10" r="1.5" />
-    <path d="M4 16l5-4 3 3 4-3 4 4" />
-  </svg>
-);
-
-const IconTable = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <rect x="3" y="4" width="18" height="16" rx="2" />
-    <path d="M3 10h18M9 4v16M15 4v16" />
-  </svg>
-);
-
-const IconCard = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <rect x="4" y="5" width="16" height="14" rx="3" />
-    <path d="M8 9h8M8 13h5" />
-  </svg>
-);
-
-const IconBadge = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <rect x="5" y="9" width="14" height="6" rx="3" />
-  </svg>
-);
-
-const IconBar = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M5 20v-8M12 20v-14M19 20v-4" />
-  </svg>
-);
-
-const IconLine = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M4 16l5-5 4 3 7-7" />
-    <circle cx="4" cy="16" r="1.5" />
-    <circle cx="9" cy="11" r="1.5" />
-    <circle cx="13" cy="14" r="1.5" />
-    <circle cx="20" cy="7" r="1.5" />
-  </svg>
-);
-
-const IconPie = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M11 3a9 9 0 0 1 9 9h-9z" />
-    <path d="M11 3a9 9 0 1 0 9 9h-9z" />
-  </svg>
-);
-
-const IconPlusCircle = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <circle cx="12" cy="12" r="9" />
-    <path d="M12 8v8M8 12h8" />
-  </svg>
-);
-
-const IconCursor = ({ color = "#C4622D", size = 24 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M4 4l7 18 2-7 7-2z" />
-  </svg>
-);
-
-const IconArrowUp = ({ color = "#FFFFFF", size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M12 19V5M5 12l7-7 7 7" />
-  </svg>
-);
-
-const IconArrowDown = ({ color = "#FFFFFF", size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M12 5v14M19 12l-7 7-7-7" />
-  </svg>
-);
-
-const IconDuplicate = ({ color = "#FFFFFF", size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <rect x="8" y="8" width="12" height="12" rx="2" />
-    <path d="M4 4h12v12" />
-  </svg>
-);
-
-const IconTrash = ({ color = "#B03030", size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M4 7h16" />
-    <path d="M10 11v6M14 11v6" />
-    <path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" />
-    <path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
-  </svg>
-);
-
-const IconClose = ({ color = "#7A5C44", size = 18 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M6 6l12 12M6 18L18 6" />
-  </svg>
-);
-
-const IconBrain = ({ color = "#D4A017", size = 18 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M9 4a3 3 0 0 0-3 3v2a3 3 0 0 0 0 6v2a3 3 0 0 0 3 3" />
-    <path d="M15 4a3 3 0 0 1 3 3v2a3 3 0 0 1 0 6v2a3 3 0 0 1-3 3" />
-    <path d="M12 4v16" />
-  </svg>
-);
-
-const IconLightning = ({ color = "#C4622D", size = 22 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M13 2L3 14h8l-2 8 10-12h-8z" />
-  </svg>
-);
-
-const IconEdit = ({ color = "#7A5C44", size = 18 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M4 20h4l10-10-4-4L4 16v4z" />
-    <path d="M14 6l4 4" />
-  </svg>
-);
-
-const IconSend = ({ color = "#FFFFFF", size = 18 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M22 2L11 13" />
-    <path d="M22 2l-7 20-4-9-9-4z" />
-  </svg>
-);

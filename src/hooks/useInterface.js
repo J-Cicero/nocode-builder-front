@@ -80,7 +80,12 @@ export function useInterface(projectId) {
   };
 
   const reorderComponents = async (pageId, orderedIds) => {
-    const payload = orderedIds.map((id, index) => ({
+    const safeOrderedIds = Array.from(
+      new Set((orderedIds || []).filter((id) => typeof id === "string" && id.length > 0))
+    );
+    if (!safeOrderedIds.length) return;
+
+    const payload = safeOrderedIds.map((id, index) => ({
       id,
       ordre: index,
       position_x: 0,
@@ -89,7 +94,7 @@ export function useInterface(projectId) {
     await interfaceApi.reorderComponents(pageId, payload);
     setComponentsByPage((prev) => {
       const list = (prev[pageId] || []).slice().sort((a, b) => {
-        return orderedIds.indexOf(a.tracking_id) - orderedIds.indexOf(b.tracking_id);
+        return safeOrderedIds.indexOf(a.tracking_id) - safeOrderedIds.indexOf(b.tracking_id);
       });
       return { ...prev, [pageId]: list };
     });
