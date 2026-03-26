@@ -53,6 +53,8 @@ export default function EditorPage() {
     refresh: refreshSchema,
   } = useSchema(id);
   const [activePageId, setActivePageId] = useState(null);
+  const [interfaceActionError, setInterfaceActionError] = useState(null);
+  const isCreatingComponentRef = useRef(false);
   const {
     workflows,
     loading: loadingWorkflows,
@@ -91,6 +93,23 @@ export default function EditorPage() {
       setActivePageId(pages[0].tracking_id);
     }
   }, [pages, activePageId]);
+
+  const pagesForDevice = pages.filter(
+    (page) => !page.type_page || page.type_page === device
+  );
+
+  useEffect(() => {
+    if (!pagesForDevice.length) {
+      setActivePageId(null);
+      setSelectedComponent(null);
+      return;
+    }
+    const existsInDevicePages = pagesForDevice.some((page) => page.tracking_id === activePageId);
+    if (!existsInDevicePages) {
+      setActivePageId(pagesForDevice[0].tracking_id);
+      setSelectedComponent(null);
+    }
+  }, [pagesForDevice, activePageId]);
 
   useEffect(() => {
     if (tables.length && !selectedTableId) {
@@ -320,27 +339,54 @@ export default function EditorPage() {
 
     const activeData = active.data.current || {};
     const overId = over.id;
+    const activePageComponents = componentsByPage[activePageId] || [];
+    const isDropInsideCanvas =
+      overId === "canvas" ||
+      activePageComponents.some((component) => component.tracking_id === overId);
 
     // Palette drop onto canvas
-    if (activeData.fromPalette && overId === "canvas") {
-      const payload = toBackendComponent(
-        activeData.type,
-        componentDefaults[activeData.type] || {},
-        componentsByPage[activePageId]?.length || 0
-      );
-      const created = await createComponentApi(activePageId, payload);
-      setSelectedComponent({ page: activePageId, id: created.tracking_id });
+    if (activeData.fromPalette && isDropInsideCanvas) {
+      if (!activePageId) return;
+      if (isCreatingComponentRef.current) return;
+      isCreatingComponentRef.current = true;
+      setInterfaceActionError(null);
+      try {
+        const payload = toBackendComponent(
+          activeData.type,
+          componentDefaults[activeData.type] || {},
+          activePageComponents.length
+        );
+        const created = await createComponentApi(activePageId, payload);
+        setSelectedComponent({ page: activePageId, id: created.tracking_id });
+      } catch (err) {
+        setInterfaceActionError(
+          err?.response?.data?.detail ||
+            err?.message ||
+            "Impossible de sauvegarder le composant."
+        );
+      } finally {
+        isCreatingComponentRef.current = false;
+      }
       return;
     }
 
     // Sortable reorder within canvas
     if (!activeData.fromPalette && overId && overId !== active.id) {
-      const list = componentsByPage[activePageId] || [];
-      const oldIndex = list.findIndex((c) => c.tracking_id === active.id);
-      const newIndex = list.findIndex((c) => c.tracking_id === overId);
-      if (oldIndex === -1 || newIndex === -1) return;
-      const newOrder = arrayMove(list, oldIndex, newIndex).map((c) => c.tracking_id);
-      await reorderComponents(activePageId, newOrder);
+      setInterfaceActionError(null);
+      try {
+        const list = componentsByPage[activePageId] || [];
+        const oldIndex = list.findIndex((c) => c.tracking_id === active.id);
+        const newIndex = list.findIndex((c) => c.tracking_id === overId);
+        if (oldIndex === -1 || newIndex === -1) return;
+        const newOrder = arrayMove(list, oldIndex, newIndex).map((c) => c.tracking_id);
+        await reorderComponents(activePageId, newOrder);
+      } catch (err) {
+        setInterfaceActionError(
+          err?.response?.data?.detail ||
+            err?.message ||
+            "Impossible de réordonner les composants."
+        );
+      }
     }
   };
 
@@ -438,14 +484,24 @@ export default function EditorPage() {
   const addPage = async () => {
     const newName = `Page ${pages.length + 1}`;
     const chemin = `/${newName.toLowerCase().replace(/\s+/g, "-")}`;
-    const created = await createPage({
-      nom: newName,
-      chemin,
-      est_accueil: pages.length === 0,
-      ordre: pages.length,
-    });
-    setActivePageId(created.tracking_id);
-    await hydrate();
+    try {
+      setInterfaceActionError(null);
+      const created = await createPage({
+        nom: newName,
+        chemin,
+        type_page: device,
+        est_accueil: pages.length === 0,
+        ordre: pages.length,
+      });
+      setActivePageId(created.tracking_id);
+      await hydrate();
+    } catch (err) {
+      setInterfaceActionError(
+        err?.response?.data?.detail ||
+          err?.message ||
+          "Impossible de créer la page."
+      );
+    }
   };
 
   const deletePage = async (pageId) => {
@@ -461,18 +517,87 @@ export default function EditorPage() {
 
   const frameWidth = device === "mobile" ? 375 : device === "tablet" ? 768 : "100%";
 
-  const addField = async () => {
-    if (!selectedTableId) return;
-    const name = `field_${Date.now().toString().slice(-5)}`;
-    await schemaApi.createField(selectedTableId, {
-      name,
-      display_name: name,
-      type: "text",
-      required: false,
-      unique: false,
-      indexed: false,
-      config: {},
+  const addTable = async (payload) => {
+    const tableIndex = tables.length + 1;
+    const baseName = payload?.name?.trim() || `table_${tableIndex}`;
+    const created = await schemaApi.createTable(id, {
+      name: baseName,
+      display_name: payload?.display_name?.trim() || baseName,
+      description: payload?.description?.trim() || null,
+      icon: null,
     });
+    await refreshSchema();
+    if (created?.data?.tracking_id) {
+      setSelectedTableId(created.data.tracking_id);
+    }
+  };
+
+  const addField = async (payload) => {
+    if (!selectedTableId) return;
+    const fieldIndex = (fieldsByTable[selectedTableId] || []).length + 1;
+    const baseName = payload?.name?.trim() || `field_${fieldIndex}`;
+    await schemaApi.createField(selectedTableId, {
+      name: baseName,
+      display_name: payload?.display_name?.trim() || baseName,
+      type: payload?.type || "text",
+      required: !!payload?.required,
+      unique: !!payload?.unique,
+      indexed: !!payload?.indexed,
+      config: payload?.defaultValue ? { default: payload.defaultValue } : {},
+    });
+    await refreshSchema();
+  };
+
+  const renameTable = async () => {
+    if (!selectedTableId) return;
+    const current = tables.find((t) => t.tracking_id === selectedTableId);
+    if (!current) return;
+    const nextName = window.prompt("Nouveau nom de la table", current.name);
+    if (nextName === null) return;
+    const cleaned = nextName.trim();
+    if (cleaned.length < 2) {
+      window.alert("Le nom de table doit contenir au moins 2 caractères.");
+      return;
+    }
+    if (!cleaned || cleaned === current.name) return;
+    await schemaApi.updateTable(selectedTableId, {
+      name: cleaned,
+      display_name: cleaned,
+    });
+    await refreshSchema();
+  };
+
+  const editField = async (field) => {
+    const fieldId = field.tracking_id || field.id;
+    if (!fieldId) return;
+
+    const nextNameRaw = window.prompt("Nouveau nom du champ", field.name || "");
+    if (nextNameRaw === null) return;
+    const nextName = nextNameRaw.trim();
+    if (nextName.length < 2) {
+      window.alert("Le nom du champ doit contenir au moins 2 caractères.");
+      return;
+    }
+    if (!nextName) return;
+
+    const nextTypeRaw = window.prompt(
+      "Type du champ (text, number, boolean, date, datetime, email, url, json)",
+      String(field.type || "text").toLowerCase()
+    );
+    if (nextTypeRaw === null) return;
+    const nextType = nextTypeRaw.trim().toLowerCase();
+    const allowedTypes = ["text", "number", "boolean", "date", "datetime", "email", "url", "json"];
+    if (!allowedTypes.includes(nextType)) {
+      window.alert("Type invalide.");
+      return;
+    }
+
+    const payload = {};
+    if (nextName !== field.name) payload.name = nextName;
+    if (nextType !== String(field.type || "").toLowerCase()) payload.type = nextType;
+    if (!Object.keys(payload).length) return;
+
+    await schemaApi.updateField(fieldId, payload);
     await refreshSchema();
   };
 
@@ -574,7 +699,7 @@ export default function EditorPage() {
               }}
             >
                 <PagesBar
-                  pages={pages}
+                  pages={pagesForDevice}
                   activePageId={activePageId}
                   setActivePage={(pid) => {
                     setActivePageId(pid);
@@ -595,7 +720,7 @@ export default function EditorPage() {
                 onDuplicate={duplicateComponent}
                 onMove={moveComponent}
                 loading={loadingInterface}
-                error={interfaceError}
+                error={interfaceError || interfaceActionError}
               />
             </div>
 
@@ -625,8 +750,11 @@ export default function EditorPage() {
             fieldsByTable={fieldsByTable}
             loading={loadingSchema}
             error={schemaError}
-            onAddField={addField}
+            onCreateTable={addTable}
+            onCreateField={addField}
+            onRenameTable={renameTable}
             onToggleRequired={toggleFieldRequired}
+            onEditField={editField}
             onDeleteField={deleteField}
           />
         )}
@@ -974,6 +1102,20 @@ function PagesBar({ pages, activePageId, setActivePage, deletePage, addPage }) {
         flexWrap: "wrap",
       }}
     >
+      {pages.length === 0 && (
+        <div
+          style={{
+            padding: "8px 12px",
+            borderRadius: 10,
+            backgroundColor: "#FFF0E8",
+            color: "#7A5C44",
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 13,
+          }}
+        >
+          No page yet. Create your first page to start building.
+        </div>
+      )}
       {pages.map((page) => (
         <div
           key={page.tracking_id}
@@ -1012,16 +1154,17 @@ function PagesBar({ pages, activePageId, setActivePage, deletePage, addPage }) {
       <button
         onClick={addPage}
         style={{
-          padding: "6px 12px",
+          padding: "8px 14px",
           borderRadius: 20,
-          border: "1px dashed #E8D9C4",
-          color: "#7A5C44",
-          backgroundColor: "#FFFFFF",
+          border: "none",
+          color: "#FFFFFF",
+          backgroundColor: "#C4622D",
           cursor: "pointer",
           fontFamily: "'DM Sans', sans-serif",
+          fontWeight: 600,
         }}
       >
-        + Add Page
+        + Create Page
       </button>
     </div>
   );
@@ -1658,11 +1801,70 @@ function TablesTab({
   fieldsByTable,
   loading,
   error,
-  onAddField,
+  onCreateTable,
+  onCreateField,
+  onRenameTable,
   onToggleRequired,
+  onEditField,
   onDeleteField,
 }) {
   const list = tables || [];
+  const [showTableForm, setShowTableForm] = useState(false);
+  const [tableForm, setTableForm] = useState({
+    name: "",
+    display_name: "",
+    description: "",
+  });
+  const [showFieldForm, setShowFieldForm] = useState(false);
+  const [fieldForm, setFieldForm] = useState({
+    name: "",
+    display_name: "",
+    type: "text",
+    required: false,
+    unique: false,
+    indexed: false,
+    defaultValue: "",
+  });
+
+  const resetTableForm = () =>
+    setTableForm({
+      name: "",
+      display_name: "",
+      description: "",
+    });
+  const resetFieldForm = () =>
+    setFieldForm({
+      name: "",
+      display_name: "",
+      type: "text",
+      required: false,
+      unique: false,
+      indexed: false,
+      defaultValue: "",
+    });
+
+  const submitTableForm = async (e) => {
+    e.preventDefault();
+    if (tableForm.name.trim().length < 2) {
+      window.alert("Le nom de table doit contenir au moins 2 caractères.");
+      return;
+    }
+    await onCreateTable(tableForm);
+    resetTableForm();
+    setShowTableForm(false);
+  };
+
+  const submitFieldForm = async (e) => {
+    e.preventDefault();
+    if (fieldForm.name.trim().length < 2) {
+      window.alert("Le nom du champ doit contenir au moins 2 caractères.");
+      return;
+    }
+    await onCreateField(fieldForm);
+    resetFieldForm();
+    setShowFieldForm(false);
+  };
+
   return (
     <div style={{ display: "flex", height: "100%", width: "100%" }}>
       <div
@@ -1683,6 +1885,7 @@ function TablesTab({
         >
           <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 18 }}>Tables</span>
           <button
+            onClick={() => setShowTableForm((prev) => !prev)}
             style={{
               backgroundColor: "#C4622D",
               border: "none",
@@ -1693,9 +1896,36 @@ function TablesTab({
               cursor: "pointer",
             }}
           >
-            + New Table
+            {showTableForm ? "Close" : "+ New Table"}
           </button>
         </div>
+        {showTableForm && (
+          <form onSubmit={submitTableForm} style={{ padding: 12, borderBottom: "1px solid #E8D9C4", display: "flex", flexDirection: "column", gap: 8 }}>
+            <input
+              value={tableForm.name}
+              onChange={(e) => setTableForm((prev) => ({ ...prev, name: e.target.value }))}
+              placeholder="table_name"
+              style={{ padding: "8px 10px", border: "1px solid #E8D9C4", borderRadius: 6 }}
+              required
+            />
+            <input
+              value={tableForm.display_name}
+              onChange={(e) => setTableForm((prev) => ({ ...prev, display_name: e.target.value }))}
+              placeholder="Display name (optional)"
+              style={{ padding: "8px 10px", border: "1px solid #E8D9C4", borderRadius: 6 }}
+            />
+            <textarea
+              value={tableForm.description}
+              onChange={(e) => setTableForm((prev) => ({ ...prev, description: e.target.value }))}
+              placeholder="Description (optional)"
+              rows={2}
+              style={{ padding: "8px 10px", border: "1px solid #E8D9C4", borderRadius: 6, resize: "vertical" }}
+            />
+            <button type="submit" style={{ backgroundColor: "#2D5A1B", color: "#FFF", border: "none", borderRadius: 6, padding: "8px 10px", cursor: "pointer" }}>
+              Create Table
+            </button>
+          </form>
+        )}
         {list.map((table) => (
           <div
             key={table.tracking_id}
@@ -1740,21 +1970,98 @@ function TablesTab({
               <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 28 }}>
                 {list.find((t) => t.tracking_id === selectedTableId)?.name}
               </span>
-              <button
-                onClick={onAddField}
-                style={{
-                  backgroundColor: "#C4622D",
-                  border: "none",
-                  color: "#FFFFFF",
-                  borderRadius: 6,
-                  padding: "6px 12px",
-                  fontFamily: "'DM Sans', sans-serif",
-                  cursor: "pointer",
-                }}
-              >
-                + Add Field
-              </button>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  onClick={onRenameTable}
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    border: "1px solid #E8D9C4",
+                    color: "#7A5C44",
+                    borderRadius: 6,
+                    padding: "6px 12px",
+                    fontFamily: "'DM Sans', sans-serif",
+                    cursor: "pointer",
+                  }}
+                >
+                  Rename Table
+                </button>
+                <button
+                  onClick={() => setShowFieldForm((prev) => !prev)}
+                  style={{
+                    backgroundColor: "#C4622D",
+                    border: "none",
+                    color: "#FFFFFF",
+                    borderRadius: 6,
+                    padding: "6px 12px",
+                    fontFamily: "'DM Sans', sans-serif",
+                    cursor: "pointer",
+                  }}
+                >
+                  {showFieldForm ? "Close" : "+ Add Field"}
+                </button>
+              </div>
             </div>
+            {showFieldForm && (
+              <form onSubmit={submitFieldForm} style={{ marginBottom: 16, border: "1px solid #E8D9C4", borderRadius: 10, padding: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <input
+                  value={fieldForm.name}
+                  onChange={(e) => setFieldForm((prev) => ({ ...prev, name: e.target.value }))}
+                  placeholder="field_name"
+                  style={{ gridColumn: "1 / -1", padding: "8px 10px", border: "1px solid #E8D9C4", borderRadius: 6 }}
+                  required
+                />
+                <input
+                  value={fieldForm.display_name}
+                  onChange={(e) => setFieldForm((prev) => ({ ...prev, display_name: e.target.value }))}
+                  placeholder="Display name"
+                  style={{ gridColumn: "1 / -1", padding: "8px 10px", border: "1px solid #E8D9C4", borderRadius: 6 }}
+                />
+                <select
+                  value={fieldForm.type}
+                  onChange={(e) => setFieldForm((prev) => ({ ...prev, type: e.target.value }))}
+                  style={{ padding: "8px 10px", border: "1px solid #E8D9C4", borderRadius: 6 }}
+                >
+                  {["text", "number", "boolean", "date", "datetime", "email", "url", "json"].map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  value={fieldForm.defaultValue}
+                  onChange={(e) => setFieldForm((prev) => ({ ...prev, defaultValue: e.target.value }))}
+                  placeholder="Default value"
+                  style={{ padding: "8px 10px", border: "1px solid #E8D9C4", borderRadius: 6 }}
+                />
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+                  <input
+                    type="checkbox"
+                    checked={fieldForm.required}
+                    onChange={(e) => setFieldForm((prev) => ({ ...prev, required: e.target.checked }))}
+                  />
+                  Required
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+                  <input
+                    type="checkbox"
+                    checked={fieldForm.unique}
+                    onChange={(e) => setFieldForm((prev) => ({ ...prev, unique: e.target.checked }))}
+                  />
+                  Unique
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+                  <input
+                    type="checkbox"
+                    checked={fieldForm.indexed}
+                    onChange={(e) => setFieldForm((prev) => ({ ...prev, indexed: e.target.checked }))}
+                  />
+                  Indexed
+                </label>
+                <button type="submit" style={{ justifySelf: "end", backgroundColor: "#2D5A1B", color: "#FFF", border: "none", borderRadius: 6, padding: "8px 12px", cursor: "pointer" }}>
+                  Create Field
+                </button>
+              </form>
+            )}
             <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'DM Sans', sans-serif" }}>
               <thead>
                 <tr style={{ backgroundColor: "#FBF4E9" }}>
@@ -1775,7 +2082,7 @@ function TablesTab({
               </thead>
               <tbody>
                 {(fieldsByTable[selectedTableId] || []).map((field) => (
-                  <tr key={field.id} style={{ borderBottom: "1px solid #F0E6D8" }}>
+                  <tr key={field.tracking_id || field.id} style={{ borderBottom: "1px solid #F0E6D8" }}>
                     <td style={{ padding: "10px 12px" }}>{field.name}</td>
                     <td style={{ padding: "10px 12px" }}>
                       <TypeBadge type={field.type} />
@@ -1787,9 +2094,14 @@ function TablesTab({
                       onClick={() => onToggleRequired(field)}
                     />
                   </td>
-                  <td style={{ padding: "10px 12px", color: "#7A5C44" }}>{field.default}</td>
+                  <td style={{ padding: "10px 12px", color: "#7A5C44" }}>{field?.config?.default ?? "-"}</td>
                   <td style={{ padding: "10px 12px", display: "flex", gap: 10 }}>
-                    <IconEdit color="#7A5C44" />
+                    <button
+                      onClick={() => onEditField(field)}
+                      style={{ background: "none", border: "none", cursor: "pointer" }}
+                    >
+                      <IconEdit color="#7A5C44" />
+                    </button>
                     <button
                       onClick={() => onDeleteField(field)}
                       style={{ background: "none", border: "none", cursor: "pointer" }}
@@ -1810,14 +2122,15 @@ function TablesTab({
 
 function TypeBadge({ type }) {
   const styles = {
-    Text: { bg: "#EEF0FF", color: "#1a3a7a" },
-    Number: { bg: "#FFF0E8", color: "#A04E22" },
-    Boolean: { bg: "#E8F5EC", color: "#1E6B3C" },
-    Date: { bg: "#FBF0E8", color: "#8B5E2A" },
-    Email: { bg: "#F0E8FF", color: "#5A2A8B" },
-    UUID: { bg: "#E8F5FC", color: "#1A5A7A" },
-    JSON: { bg: "#FFF8E8", color: "#8B6E1A" },
-  }[type] || { bg: "#FBF4E9", color: "#7A5C44" };
+    text: { bg: "#EEF0FF", color: "#1a3a7a" },
+    number: { bg: "#FFF0E8", color: "#A04E22" },
+    boolean: { bg: "#E8F5EC", color: "#1E6B3C" },
+    date: { bg: "#FBF0E8", color: "#8B5E2A" },
+    datetime: { bg: "#FBF0E8", color: "#8B5E2A" },
+    email: { bg: "#F0E8FF", color: "#5A2A8B" },
+    url: { bg: "#E8F5FC", color: "#1A5A7A" },
+    json: { bg: "#FFF8E8", color: "#8B6E1A" },
+  }[String(type || "").toLowerCase()] || { bg: "#FBF4E9", color: "#7A5C44" };
   return (
     <span
       style={{

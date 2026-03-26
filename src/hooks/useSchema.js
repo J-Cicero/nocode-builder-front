@@ -12,13 +12,12 @@ export function useSchema(projectId) {
     setLoading(true);
     setError(null);
     try {
-      const { data } = await schemaApi.listTables(projectId);
-      setTables(data);
-      // preload fields
+      const { data } = await schemaApi.getSchema(projectId);
+      const tableList = data?.tables || [];
+      setTables(tableList);
       const fieldsMap = {};
-      for (const t of data) {
-        const res = await schemaApi.listFields(t.tracking_id);
-        fieldsMap[t.tracking_id] = res.data;
+      for (const t of tableList) {
+        fieldsMap[t.tracking_id] = t.fields || [];
       }
       setFieldsByTable(fieldsMap);
     } catch (err) {

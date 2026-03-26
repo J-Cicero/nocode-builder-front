@@ -6,6 +6,16 @@ const ACCESS_KEY = "access_token";
 const REFRESH_KEY = "refresh_token";
 const USER_KEY = "authUser";
 
+const extractApiError = (err, fallback = "Une erreur est survenue.") => {
+  const detail = err?.response?.data?.detail;
+  if (Array.isArray(detail)) {
+    const message = detail.map((item) => item?.msg).filter(Boolean).join(" | ");
+    return message || fallback;
+  }
+  if (typeof detail === "string" && detail.trim()) return detail;
+  return err?.message || fallback;
+};
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
@@ -51,8 +61,9 @@ export function AuthProvider({ children }) {
       persistSession(sessionUser, data.access_token, data.refresh_token);
       return { user: sessionUser, token: data.access_token };
     } catch (err) {
-      setError(err?.response?.data?.detail || err.message);
-      throw err;
+      const message = extractApiError(err, "Échec de connexion.");
+      setError(message);
+      throw new Error(message);
     } finally {
       setIsLoading(false);
     }
@@ -75,7 +86,7 @@ export function AuthProvider({ children }) {
       };
       const registerCall =
         plan === "enterprise" ? authApi.registerEnterprise(cleaned) : authApi.registerFree(cleaned);
-      const { data } = await registerCall;
+      await registerCall;
       // registration endpoints return the created user, but no tokens
       // log the user in right after
       const loginRes = await authApi.login(cleaned.email, cleaned.password);
@@ -85,8 +96,9 @@ export function AuthProvider({ children }) {
       persistSession(profile.data, loginRes.data.access_token, loginRes.data.refresh_token);
       return { user: profile.data, token: loginRes.data.access_token };
     } catch (err) {
-      setError(err?.response?.data?.detail || err.message);
-      throw err;
+      const message = extractApiError(err, "Échec d'inscription.");
+      setError(message);
+      throw new Error(message);
     } finally {
       setIsLoading(false);
     }

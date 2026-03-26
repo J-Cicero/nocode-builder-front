@@ -19,7 +19,7 @@ export default function RegisterPage() {
     birth_date: "",
     country: "",
     company_name: "",
-    company_size: "",
+    company_size: "1-10",
   });
   const [error, setError] = useState("");
 
@@ -50,6 +50,10 @@ export default function RegisterPage() {
     }
     if (plan === "enterprise" && !form.company_name) {
       setError("Please provide your company name.");
+      return;
+    }
+    if (plan === "enterprise" && !form.company_size) {
+      setError("Please select your company size.");
       return;
     }
     if (!/[A-Za-z]/.test(form.password) || !/\d/.test(form.password) || !/[@$!%*?&]/.test(form.password)) {
