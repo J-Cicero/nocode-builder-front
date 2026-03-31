@@ -14,6 +14,9 @@ export const schemaApi = {
   listRelations: (projectId) => axios.get(`/schema/projects/${projectId}/relations`),
   createRelation: (projectId, payload) =>
     axios.post(`/schema/projects/${projectId}/relations`, payload),
+  updateRelation: (relationId, payload) =>
+    axios.patch(`/schema/relations/${relationId}`, payload),
+  deleteRelation: (relationId) => axios.delete(`/schema/relations/${relationId}`),
 };
 
 export default schemaApi;

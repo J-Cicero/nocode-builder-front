@@ -3,6 +3,7 @@ import workflowsApi from "../api/workflowsApi";
 
 export function useWorkflows(projectId) {
   const [workflows, setWorkflows] = useState([]);
+  const [executionsByWorkflow, setExecutionsByWorkflow] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -39,9 +40,31 @@ export function useWorkflows(projectId) {
   const remove = async (id) => {
     await workflowsApi.remove(id);
     setWorkflows((prev) => prev.filter((w) => w.tracking_id !== id));
+    setExecutionsByWorkflow((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
   };
 
-  return { workflows, loading, error, refresh: fetchAll, create, update, remove };
+  const loadExecutions = async (workflowId) => {
+    const { data } = await workflowsApi.executions(workflowId);
+    const list = data || [];
+    setExecutionsByWorkflow((prev) => ({ ...prev, [workflowId]: list }));
+    return list;
+  };
+
+  return {
+    workflows,
+    executionsByWorkflow,
+    loading,
+    error,
+    refresh: fetchAll,
+    create,
+    update,
+    remove,
+    loadExecutions,
+  };
 }
 
 export default useWorkflows;

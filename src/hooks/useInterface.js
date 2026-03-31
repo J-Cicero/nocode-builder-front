@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import interfaceApi from "../api/interfaceApi";
 
+const byOrdre = (a, b) => (a?.ordre ?? 0) - (b?.ordre ?? 0);
+
 export function useInterface(projectId) {
   const [pages, setPages] = useState([]);
   const [componentsByPage, setComponentsByPage] = useState({});
@@ -14,11 +16,11 @@ export function useInterface(projectId) {
       setError(null);
       try {
         const { data } = await interfaceApi.getInterface(pid);
-        const pageList = data.pages || [];
+        const pageList = (data.pages || []).slice().sort(byOrdre);
         setPages(pageList);
         const map = {};
         pageList.forEach((p) => {
-          map[p.tracking_id] = p.composants || [];
+          map[p.tracking_id] = (p.composants || []).slice().sort(byOrdre);
         });
         setComponentsByPage(map);
       } catch (err) {
@@ -36,7 +38,7 @@ export function useInterface(projectId) {
 
   const createPage = async (payload) => {
     const { data } = await interfaceApi.createPage(projectId, payload);
-    setPages((prev) => [...prev, data]);
+    setPages((prev) => [...prev, data].sort(byOrdre));
     setComponentsByPage((prev) => ({ ...prev, [data.tracking_id]: [] }));
     return data;
   };
@@ -55,7 +57,7 @@ export function useInterface(projectId) {
     const { data } = await interfaceApi.createComponent(pageId, payload);
     setComponentsByPage((prev) => ({
       ...prev,
-      [pageId]: [...(prev[pageId] || []), data],
+      [pageId]: [...(prev[pageId] || []), data].sort(byOrdre),
     }));
     return data;
   };
@@ -66,7 +68,7 @@ export function useInterface(projectId) {
       ...prev,
       [pageId]: (prev[pageId] || []).map((c) =>
         c.tracking_id === componentId ? data : c
-      ),
+      ).sort(byOrdre),
     }));
     return data;
   };
@@ -94,7 +96,12 @@ export function useInterface(projectId) {
     await interfaceApi.reorderComponents(pageId, payload);
     setComponentsByPage((prev) => {
       const list = (prev[pageId] || []).slice().sort((a, b) => {
-        return safeOrderedIds.indexOf(a.tracking_id) - safeOrderedIds.indexOf(b.tracking_id);
+        const aIndex = safeOrderedIds.indexOf(a.tracking_id);
+        const bIndex = safeOrderedIds.indexOf(b.tracking_id);
+        if (aIndex === -1 && bIndex === -1) return byOrdre(a, b);
+        if (aIndex === -1) return 1;
+        if (bIndex === -1) return -1;
+        return aIndex - bIndex;
       });
       return { ...prev, [pageId]: list };
     });

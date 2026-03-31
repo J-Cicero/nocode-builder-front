@@ -4,6 +4,7 @@ import schemaApi from "../api/schemaApi";
 export function useSchema(projectId) {
   const [tables, setTables] = useState([]);
   const [fieldsByTable, setFieldsByTable] = useState({});
+  const [relations, setRelations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -15,6 +16,7 @@ export function useSchema(projectId) {
       const { data } = await schemaApi.getSchema(projectId);
       const tableList = data?.tables || [];
       setTables(tableList);
+      setRelations(data?.relations || []);
       const fieldsMap = {};
       for (const t of tableList) {
         fieldsMap[t.tracking_id] = t.fields || [];
@@ -34,6 +36,7 @@ export function useSchema(projectId) {
   return {
     tables,
     fieldsByTable,
+    relations,
     loading,
     error,
     refresh: fetchTables,

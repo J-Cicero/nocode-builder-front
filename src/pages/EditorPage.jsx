@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   DndContext,
@@ -17,246 +17,14 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import schemaApi from "../api/schemaApi";
-import interfaceApi from "../api/interfaceApi";
+import projectsApi from "../api/projectsApi";
+import generatorApi from "../api/generatorApi";
+import aiApi from "../api/aiApi";
 import { useAuth } from "../store/authStore";
 import { useInterface } from "../hooks/useInterface";
 import { useSchema } from "../hooks/useSchema";
 import { useWorkflows } from "../hooks/useWorkflows";
 import Loader from "../components/common/Loader";
-
-// ───────────────────────── ICONS ───────────────────────────────
-const IconBack = ({ color = "#2C1A0E" }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M15 18l-6-6 6-6" />
-  </svg>
-);
-
-const IconChevron = ({ color = "#7A5C44" }) => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M6 9l6 6 6-6" />
-  </svg>
-);
-
-const IconGrip = ({ color = "#FFFFFF", size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <circle cx="8" cy="7" r="1" />
-    <circle cx="8" cy="12" r="1" />
-    <circle cx="8" cy="17" r="1" />
-    <circle cx="16" cy="7" r="1" />
-    <circle cx="16" cy="12" r="1" />
-    <circle cx="16" cy="17" r="1" />
-  </svg>
-);
-
-const IconAlignLeft = ({ color = "#FFFFFF", size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M4 6h16M4 12h10M4 18h16" />
-  </svg>
-);
-
-const IconAlignCenter = ({ color = "#FFFFFF", size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M4 6h16M7 12h10M4 18h16" />
-  </svg>
-);
-
-const IconAlignRight = ({ color = "#FFFFFF", size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M4 6h16M10 12h10M4 18h16" />
-  </svg>
-);
-
-const IconMinus = ({ color = "#FFFFFF", size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M5 12h14" />
-  </svg>
-);
-
-const IconPlus = ({ color = "#FFFFFF", size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M12 5v14M5 12h14" />
-  </svg>
-);
-
-const IconBox = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M3 7l9 4 9-4-9-4-9 4v10l9 4 9-4V7" />
-  </svg>
-);
-
-const IconColumns = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <rect x="3" y="4" width="7" height="16" rx="1.5" />
-    <rect x="14" y="4" width="7" height="16" rx="1.5" />
-  </svg>
-);
-
-const IconDivider = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <line x1="4" y1="12" x2="20" y2="12" />
-    <circle cx="6" cy="12" r="1.5" />
-    <circle cx="18" cy="12" r="1.5" />
-  </svg>
-);
-
-const IconSpacer = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M4 4h16M4 20h16M12 8v8" />
-    <path d="M9 11l3-3 3 3M9 13l3 3 3-3" />
-  </svg>
-);
-
-const IconInput = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <rect x="3" y="7" width="18" height="10" rx="2" />
-    <line x1="6" y1="12" x2="9" y2="12" />
-  </svg>
-);
-
-const IconButton = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <rect x="4" y="8" width="16" height="8" rx="3" />
-  </svg>
-);
-
-const IconDropdown = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <rect x="3" y="6" width="18" height="12" rx="2" />
-    <path d="M8 10l4 4 4-4" />
-  </svg>
-);
-
-const IconCheckbox = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <rect x="4" y="4" width="16" height="16" rx="3" />
-    <path d="M8 12l3 3 5-5" />
-  </svg>
-);
-
-const IconTextarea = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <rect x="4" y="4" width="16" height="16" rx="2" />
-    <path d="M8 8h8M8 12h8M8 16h5" />
-  </svg>
-);
-
-const IconUpload = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M12 16V4" />
-    <path d="M7 9l5-5 5 5" />
-    <path d="M5 20h14" />
-  </svg>
-);
-
-const IconTitle = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M4 6h16M10 6v12" />
-  </svg>
-);
-
-const IconText = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M5 7h14M5 12h10M5 17h8" />
-  </svg>
-);
-
-const IconImage = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <rect x="4" y="5" width="16" height="14" rx="2" />
-    <circle cx="9" cy="10" r="1.5" />
-    <path d="M4 16l5-4 3 3 4-3 4 4" />
-  </svg>
-);
-
-const IconTable = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <rect x="3" y="4" width="18" height="16" rx="2" />
-    <path d="M3 10h18M9 4v16M15 4v16" />
-  </svg>
-);
-
-const IconCard = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <rect x="4" y="5" width="16" height="14" rx="3" />
-    <path d="M8 9h8M8 13h5" />
-  </svg>
-);
-
-const IconBadge = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <rect x="5" y="9" width="14" height="6" rx="3" />
-  </svg>
-);
-
-const IconBar = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M5 20v-8M12 20v-14M19 20v-4" />
-  </svg>
-);
-
-const IconLine = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M4 16l5-5 4 3 7-7" />
-    <circle cx="4" cy="16" r="1.5" />
-    <circle cx="9" cy="11" r="1.5" />
-    <circle cx="13" cy="14" r="1.5" />
-    <circle cx="20" cy="7" r="1.5" />
-  </svg>
-);
-
-const IconPie = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M11 3a9 9 0 0 1 9 9h-9z" />
-    <path d="M11 3a9 9 0 1 0 9 9h-9z" />
-  </svg>
-);
-
-const IconPlusCircle = ({ color = "#C4622D", size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <circle cx="12" cy="12" r="9" />
-    <path d="M12 8v8M8 12h8" />
-  </svg>
-);
-
-const IconCursor = ({ color = "#C4622D", size = 24 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M4 4l7 18 2-7 7-2z" />
-  </svg>
-);
-
-const IconArrowUp = ({ color = "#FFFFFF", size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M12 19V5M5 12l7-7 7 7" />
-  </svg>
-);
-
-const IconArrowDown = ({ color = "#FFFFFF", size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M12 5v14M19 12l-7 7-7-7" />
-  </svg>
-);
-
-const IconDuplicate = ({ color = "#FFFFFF", size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <rect x="8" y="8" width="12" height="12" rx="2" />
-    <path d="M4 4h12v12" />
-  </svg>
-);
-
-const IconTrash = ({ color = "#B03030", size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M4 7h16" />
-    <path d="M10 11v6M14 11v6" />
-    <path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" />
-    <path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
-  </svg>
-);
-
-const IconClose = ({ color = "#7A5C44", size = 18 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M6 6l12 12M6 18L18 6" />
-  </svg>
-);
 
 const IconEdit = ({ color = "#7A5C44", size = 16 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
@@ -285,10 +53,207 @@ const IconLightning = ({ color = "#C4622D", size = 20 }) => (
   </svg>
 );
 
+const IconBack = ({ color = "#7A5C44", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+const IconClose = ({ color = "#7A5C44", size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" />
+  </svg>
+);
+const IconChevron = ({ color = "#7A5C44", size = 14, open = false }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    {open ? <path d="M6 15l6-6 6 6" /> : <path d="M6 9l6 6 6-6" />}
+  </svg>
+);
+const IconCursor = ({ color = "#7A5C44", size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M5 3l10 10-5 1-1 5L5 3z" />
+  </svg>
+);
+const IconTrash = ({ color = "#B03030", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M3 6h18M8 6V4h8v2m-9 0l1 14h8l1-14" strokeLinecap="round" />
+  </svg>
+);
+const IconDuplicate = ({ color = "#7A5C44", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <rect x="9" y="9" width="11" height="11" rx="2" />
+    <rect x="4" y="4" width="11" height="11" rx="2" />
+  </svg>
+);
+const IconArrowUp = ({ color = "#7A5C44", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M12 19V5M6 11l6-6 6 6" strokeLinecap="round" />
+  </svg>
+);
+const IconArrowDown = ({ color = "#7A5C44", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M12 5v14M18 13l-6 6-6-6" strokeLinecap="round" />
+  </svg>
+);
+const IconGrip = ({ color = "#7A5C44", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+    <circle cx="7" cy="7" r="1.5" />
+    <circle cx="12" cy="7" r="1.5" />
+    <circle cx="17" cy="7" r="1.5" />
+    <circle cx="7" cy="12" r="1.5" />
+    <circle cx="12" cy="12" r="1.5" />
+    <circle cx="17" cy="12" r="1.5" />
+    <circle cx="7" cy="17" r="1.5" />
+    <circle cx="12" cy="17" r="1.5" />
+    <circle cx="17" cy="17" r="1.5" />
+  </svg>
+);
+const IconAlignLeft = ({ color = "#7A5C44", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M4 6h16M4 12h10M4 18h13" strokeLinecap="round" />
+  </svg>
+);
+const IconAlignCenter = ({ color = "#7A5C44", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M4 6h16M7 12h10M6 18h12" strokeLinecap="round" />
+  </svg>
+);
+const IconAlignRight = ({ color = "#7A5C44", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M4 6h16M10 12h10M7 18h13" strokeLinecap="round" />
+  </svg>
+);
+const IconPlus = ({ color = "#7A5C44", size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+  </svg>
+);
+const IconMinus = ({ color = "#7A5C44", size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M5 12h14" strokeLinecap="round" />
+  </svg>
+);
+const IconPlusCircle = ({ color = "#FFFFFF", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 8v8M8 12h8" strokeLinecap="round" />
+  </svg>
+);
+const IconBox = ({ color = "#7A5C44", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <rect x="4" y="4" width="16" height="16" rx="2" />
+  </svg>
+);
+const IconColumns = ({ color = "#7A5C44", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <rect x="4" y="5" width="7" height="14" rx="1" />
+    <rect x="13" y="5" width="7" height="14" rx="1" />
+  </svg>
+);
+const IconDivider = ({ color = "#7A5C44", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M3 12h18" strokeLinecap="round" />
+  </svg>
+);
+const IconSpacer = ({ color = "#7A5C44", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M4 8h16M4 16h16" />
+    <path d="M12 9v6" />
+  </svg>
+);
+const IconInput = ({ color = "#7A5C44", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <rect x="3" y="7" width="18" height="10" rx="2" />
+  </svg>
+);
+const IconButton = ({ color = "#7A5C44", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <rect x="4" y="8" width="16" height="8" rx="4" />
+  </svg>
+);
+const IconDropdown = ({ color = "#7A5C44", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <rect x="3" y="7" width="18" height="10" rx="2" />
+    <path d="M10 11l2 2 2-2" />
+  </svg>
+);
+const IconCheckbox = ({ color = "#7A5C44", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <rect x="4" y="4" width="16" height="16" rx="2" />
+    <path d="M8 12l3 3 5-6" />
+  </svg>
+);
+const IconTextarea = ({ color = "#7A5C44", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <rect x="3" y="6" width="18" height="12" rx="2" />
+    <path d="M7 10h10M7 14h8" />
+  </svg>
+);
+const IconUpload = ({ color = "#7A5C44", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M12 16V6M8 10l4-4 4 4M4 18h16" strokeLinecap="round" />
+  </svg>
+);
+const IconTitle = ({ color = "#7A5C44", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M5 6h14M12 6v12" strokeLinecap="round" />
+  </svg>
+);
+const IconText = ({ color = "#7A5C44", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M4 7h16M4 12h12M4 17h10" strokeLinecap="round" />
+  </svg>
+);
+const IconImage = ({ color = "#7A5C44", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <circle cx="9" cy="10" r="1.5" />
+    <path d="M21 16l-5-4-4 3-2-2-7 6" />
+  </svg>
+);
+const IconTable = ({ color = "#7A5C44", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <path d="M3 10h18M8 5v14M15 5v14" />
+  </svg>
+);
+const IconCard = ({ color = "#7A5C44", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <rect x="4" y="5" width="16" height="14" rx="2" />
+    <path d="M7 9h10M7 13h6" />
+  </svg>
+);
+const IconBadge = ({ color = "#7A5C44", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M12 3l3 3h4v4l3 3-3 3v4h-4l-3 3-3-3H5v-4l-3-3 3-3V6h4z" />
+  </svg>
+);
+const IconBar = ({ color = "#7A5C44", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M4 20V9M10 20V5M16 20v-8M22 20v-4" />
+  </svg>
+);
+const IconLine = ({ color = "#7A5C44", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M3 17l6-6 4 3 8-8" />
+    <circle cx="3" cy="17" r="1.5" fill={color} stroke="none" />
+    <circle cx="9" cy="11" r="1.5" fill={color} stroke="none" />
+    <circle cx="13" cy="14" r="1.5" fill={color} stroke="none" />
+    <circle cx="21" cy="6" r="1.5" fill={color} stroke="none" />
+  </svg>
+);
+const IconPie = ({ color = "#7A5C44", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <path d="M12 2v10h10A10 10 0 1 1 12 2z" />
+    <path d="M12 2a10 10 0 0 1 10 10" />
+  </svg>
+);
+
 export default function EditorPage() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { token } = useAuth();
+  const { token, isLoading: authLoading } = useAuth();
+  const apiReady = !authLoading && !!token;
+  const safeProjectId = apiReady ? id : null;
 
   // ─────────────────────────── STATE ───────────────────────────
   const [activeTab, setActiveTab] = useState("interface");
@@ -304,49 +269,139 @@ export default function EditorPage() {
     deleteComponent: deleteComponentApi,
     updateComponent: updateComponentApi,
     reorderComponents,
-    setPages,
-  } = useInterface(id);
+  } = useInterface(safeProjectId);
   const {
     tables,
     fieldsByTable,
+    relations,
     loading: loadingSchema,
     error: schemaError,
     refresh: refreshSchema,
-  } = useSchema(id);
+  } = useSchema(safeProjectId);
   const [activePageId, setActivePageId] = useState(null);
   const [interfaceActionError, setInterfaceActionError] = useState(null);
   const isCreatingComponentRef = useRef(false);
   const {
     workflows,
+    executionsByWorkflow,
     loading: loadingWorkflows,
     error: workflowsError,
     create: createWorkflow,
     update: updateWorkflow,
     remove: removeWorkflow,
-  } = useWorkflows(id);
+    loadExecutions,
+  } = useWorkflows(safeProjectId);
   const [selectedComponent, setSelectedComponent] = useState(null);
   const [device, setDevice] = useState("mobile");
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
-  const [chatMessages, setChatMessages] = useState([
-    {
-      role: "ai",
-      text: "Hi! I am your AI assistant for this project. Ask me anything about building your app — data structure, components, workflows, or best practices.",
-    },
-  ]);
+  const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
   const [isAiTyping, setIsAiTyping] = useState(false);
+  const [aiError, setAiError] = useState(null);
   const [selectedTableId, setSelectedTableId] = useState(null);
   const [workflowModalOpen, setWorkflowModalOpen] = useState(false);
   const [workflowStep, setWorkflowStep] = useState(1);
   const [isMobileLayout, setIsMobileLayout] = useState(false);
   const [showLeftPanel, setShowLeftPanel] = useState(true);
   const [showRightPanel, setShowRightPanel] = useState(true);
-
-  const project = {
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [generations, setGenerations] = useState([]);
+  const [loadingGenerations, setLoadingGenerations] = useState(false);
+  const [generationBusy, setGenerationBusy] = useState(false);
+  const [generationError, setGenerationError] = useState(null);
+  const [project, setProject] = useState({
     tracking_id: id || "p-demo",
-    name: "Inventory App",
+    name: "Project",
     status: "draft",
+  });
+  const [loadingProject, setLoadingProject] = useState(false);
+  const [projectError, setProjectError] = useState(null);
+  const [schemaActionError, setSchemaActionError] = useState(null);
+  const [workflowsActionError, setWorkflowsActionError] = useState(null);
+
+  const fetchGenerations = async () => {
+    if (!safeProjectId) return;
+    setLoadingGenerations(true);
+    setGenerationError(null);
+    try {
+      const { data } = await generatorApi.list(safeProjectId);
+      setGenerations(data?.generations || []);
+    } catch (err) {
+      setGenerationError(
+        err?.response?.data?.detail || err?.message || "Impossible de charger les generations."
+      );
+    } finally {
+      setLoadingGenerations(false);
+    }
   };
+
+  const downloadGeneration = async (trackingId, name) => {
+    try {
+      setGenerationError(null);
+      const { data } = await generatorApi.download(trackingId);
+      const url = window.URL.createObjectURL(data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${name || "generation"}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setGenerationError(
+        err?.response?.data?.detail || err?.message || "Impossible de telecharger le zip."
+      );
+    }
+  };
+
+  const handlePreview = async () => {
+    setPreviewOpen(true);
+    await fetchGenerations();
+  };
+
+  const handleExport = async () => {
+    if (!safeProjectId) return;
+    setGenerationBusy(true);
+    setGenerationError(null);
+    try {
+      const fallbackName = `build-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}`;
+      const exportName = (project?.name || fallbackName).trim();
+      const { data } = await generatorApi.generate(safeProjectId, { nom: exportName });
+      await fetchGenerations();
+      if (data?.tracking_id) {
+        await downloadGeneration(data.tracking_id, data.nom || exportName);
+      }
+    } catch (err) {
+      setGenerationError(
+        err?.response?.data?.detail || err?.message || "Impossible de lancer l'export."
+      );
+    } finally {
+      setGenerationBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchProject = async () => {
+      if (!safeProjectId) return;
+      setLoadingProject(true);
+      setProjectError(null);
+      try {
+        const { data } = await projectsApi.getById(safeProjectId);
+        if (!mounted) return;
+        setProject(data);
+      } catch (err) {
+        if (!mounted) return;
+        setProjectError(err?.response?.data?.detail || err?.message || "Impossible de charger le projet.");
+      } finally {
+        if (mounted) setLoadingProject(false);
+      }
+    };
+    fetchProject();
+    return () => {
+      mounted = false;
+    };
+  }, [safeProjectId]);
 
   // set default active page when pages fetched
   useEffect(() => {
@@ -373,7 +428,12 @@ export default function EditorPage() {
   }, [pagesForDevice, activePageId]);
 
   useEffect(() => {
-    if (tables.length && !selectedTableId) {
+    if (!tables.length) {
+      setSelectedTableId(null);
+      return;
+    }
+    const exists = tables.some((table) => table.tracking_id === selectedTableId);
+    if (!exists) {
       setSelectedTableId(tables[0].tracking_id);
     }
   }, [tables, selectedTableId]);
@@ -390,64 +450,6 @@ export default function EditorPage() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
-
-  // ────────────────────────── MOCK DATA ─────────────────────────
-  const mockTables = {
-    Users: [
-      {
-        id: 1,
-        name: "id",
-        type: "UUID",
-        required: true,
-        default: "uuid_generate_v4()",
-      },
-      { id: 2, name: "name", type: "Text", required: true, default: "" },
-      { id: 3, name: "email", type: "Email", required: true, default: "" },
-      { id: 4, name: "phone", type: "Text", required: false, default: "" },
-      { id: 5, name: "role", type: "Text", required: true, default: "user" },
-      { id: 6, name: "created_at", type: "Date", required: true, default: "now()" },
-    ],
-    Products: [
-      {
-        id: 1,
-        name: "id",
-        type: "UUID",
-        required: true,
-        default: "uuid_generate_v4()",
-      },
-      { id: 2, name: "name", type: "Text", required: true, default: "" },
-      { id: 3, name: "price", type: "Number", required: true, default: "0" },
-      { id: 4, name: "stock", type: "Number", required: true, default: "0" },
-      { id: 5, name: "category", type: "Text", required: false, default: "" },
-      { id: 6, name: "image_url", type: "Text", required: false, default: "" },
-      { id: 7, name: "description", type: "Text", required: false, default: "" },
-      { id: 8, name: "created_at", type: "Date", required: true, default: "now()" },
-    ],
-    Orders: [
-      {
-        id: 1,
-        name: "id",
-        type: "UUID",
-        required: true,
-        default: "uuid_generate_v4()",
-      },
-      { id: 2, name: "user_id", type: "UUID", required: true, default: "" },
-      { id: 3, name: "total", type: "Number", required: true, default: "0" },
-      { id: 4, name: "status", type: "Text", required: true, default: "pending" },
-      { id: 5, name: "created_at", type: "Date", required: true, default: "now()" },
-    ],
-    Categories: [
-      {
-        id: 1,
-        name: "id",
-        type: "UUID",
-        required: true,
-        default: "uuid_generate_v4()",
-      },
-      { id: 2, name: "name", type: "Text", required: true, default: "" },
-      { id: 3, name: "description", type: "Text", required: false, default: "" },
-    ],
-  };
 
   // ──────────────────────── DND SENSORS ────────────────────────
   const sensors = useSensors(
@@ -594,6 +596,36 @@ export default function EditorPage() {
   // ──────────────────────── DND HANDLERS ───────────────────────
   const handleDragStart = () => {};
 
+  const ensurePageForDrop = async () => {
+    if (activePageId) return activePageId;
+
+    const existingPageId = pagesForDevice[0]?.tracking_id || pages[0]?.tracking_id || null;
+    if (existingPageId) {
+      setActivePageId(existingPageId);
+      return existingPageId;
+    }
+
+    try {
+      const newName = "Page 1";
+      const created = await createPage({
+        nom: newName,
+        chemin: "/page-1",
+        type_page: device,
+        est_accueil: true,
+        ordre: 0,
+      });
+      setActivePageId(created.tracking_id);
+      return created.tracking_id;
+    } catch (err) {
+      setInterfaceActionError(
+        err?.response?.data?.detail ||
+          err?.message ||
+          "Impossible de creer une page pour deposer le composant."
+      );
+      return null;
+    }
+  };
+
   const handleDragEnd = async (event) => {
     const { active, over } = event;
     if (!over) return;
@@ -607,18 +639,20 @@ export default function EditorPage() {
 
     // Palette drop onto canvas
     if (activeData.fromPalette && isDropInsideCanvas) {
-      if (!activePageId) return;
+      const targetPageId = await ensurePageForDrop();
+      if (!targetPageId) return;
       if (isCreatingComponentRef.current) return;
       isCreatingComponentRef.current = true;
       setInterfaceActionError(null);
       try {
+        const pageComponents = componentsByPage[targetPageId] || [];
         const payload = toBackendComponent(
           activeData.type,
           componentDefaults[activeData.type] || {},
-          activePageComponents.length
+          pageComponents.length
         );
-        const created = await createComponentApi(activePageId, payload);
-        setSelectedComponent({ page: activePageId, id: created.tracking_id });
+        const created = await createComponentApi(targetPageId, payload);
+        setSelectedComponent({ page: targetPageId, id: created.tracking_id });
       } catch (err) {
         setInterfaceActionError(
           err?.response?.data?.detail ||
@@ -659,37 +693,86 @@ export default function EditorPage() {
     }
   }, [chatMessages, isAiTyping]);
 
-  const aiResponses = [
-    {
-      keyword: "table",
-      text: "I can help you design your data tables! What kind of data do you want to store? For example, if you're building a booking app, you might need a Reservations table with fields like date, time, client_name, and status.",
-    },
-    {
-      keyword: "button",
-      text: "Great choice! Buttons are key for user actions. I suggest using the primary color #C4622D for main CTAs, and outlined style for secondary actions. Want me to suggest a button layout for your current page?",
-    },
-    {
-      keyword: "form",
-      text: "For forms, best practice is to group related fields together, use clear labels above each input, and always include a submit button with a loading state. What data will your form collect?",
-    },
-  ];
+  const loadAiHistory = async () => {
+    if (!safeProjectId) return;
+    try {
+      setAiError(null);
+      const { data } = await aiApi.history(safeProjectId);
+      const mapped = (data?.messages || []).map((m) => ({
+        role: m.role,
+        text: m.content,
+        tracking_id: m.tracking_id,
+      }));
+      setChatMessages(mapped);
+    } catch (err) {
+      setAiError(
+        err?.response?.data?.detail || err?.message || "Impossible de charger l'historique AI."
+      );
+    }
+  };
 
-  const sendMessage = () => {
-    if (!chatInput.trim()) return;
+  useEffect(() => {
+    loadAiHistory();
+  }, [safeProjectId]);
+
+  const sendMessage = async () => {
     const message = chatInput.trim();
+    if (!message) return;
+    if (!safeProjectId) {
+      setAiError("Session non prete pour le chat AI.");
+      return;
+    }
     setChatMessages((prev) => [...prev, { role: "user", text: message }]);
     setChatInput("");
     setIsAiTyping(true);
-    setTimeout(() => {
-      const lower = message.toLowerCase();
-      const match =
-        aiResponses.find((r) => lower.includes(r.keyword)) ||
-        {
-          text: "I'm here to help you build your app! You can ask me about: designing your data structure, choosing the right components, best practices for your interface, or how to set up workflows.",
-        };
-      setChatMessages((prev) => [...prev, { role: "ai", text: match.text }]);
+    setAiError(null);
+    try {
+      if (message.toLowerCase().startsWith("/schema ")) {
+        const description = message.slice(8).trim();
+        if (description.length < 10) {
+          setAiError("Description trop courte pour la generation de schema.");
+        } else {
+          const { data } = await aiApi.generateSchema(safeProjectId, { description });
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              text: data?.message || "Schema genere avec succes.",
+            },
+          ]);
+          await refreshSchema();
+        }
+      } else {
+        const { data } = await aiApi.chat(safeProjectId, { content: message });
+        setChatMessages((prev) => [
+          ...prev,
+          { role: data?.role || "assistant", text: data?.content || "" },
+        ]);
+      }
+    } catch (err) {
+      setAiError(
+        err?.response?.data?.detail || err?.message || "Erreur lors de l'appel AI."
+      );
+      setChatMessages((prev) => [
+        ...prev,
+        { role: "assistant", text: "Je n'ai pas pu traiter la demande pour le moment." },
+      ]);
+    } finally {
       setIsAiTyping(false);
-    }, 1000);
+    }
+  };
+
+  const clearAiHistory = async () => {
+    if (!safeProjectId) return;
+    try {
+      setAiError(null);
+      await aiApi.clearHistory(safeProjectId);
+      setChatMessages([]);
+    } catch (err) {
+      setAiError(
+        err?.response?.data?.detail || err?.message || "Impossible de vider l'historique AI."
+      );
+    }
   };
 
   // ───────────────────── COMPONENT HELPERS ──────────────────────
@@ -864,34 +947,48 @@ export default function EditorPage() {
   const frameWidth = device === "mobile" ? 375 : device === "tablet" ? 768 : "100%";
 
   const addTable = async (payload) => {
-    const tableIndex = tables.length + 1;
-    const baseName = payload?.name?.trim() || `table_${tableIndex}`;
-    const created = await schemaApi.createTable(id, {
-      name: baseName,
-      display_name: payload?.display_name?.trim() || baseName,
-      description: payload?.description?.trim() || null,
-      icon: null,
-    });
-    await refreshSchema();
-    if (created?.data?.tracking_id) {
-      setSelectedTableId(created.data.tracking_id);
+    setSchemaActionError(null);
+    try {
+      const tableIndex = tables.length + 1;
+      const baseName = payload?.name?.trim() || `table_${tableIndex}`;
+      const created = await schemaApi.createTable(id, {
+        name: baseName,
+        display_name: payload?.display_name?.trim() || baseName,
+        description: payload?.description?.trim() || null,
+        icon: null,
+      });
+      await refreshSchema();
+      if (created?.data?.tracking_id) {
+        setSelectedTableId(created.data.tracking_id);
+      }
+    } catch (err) {
+      setSchemaActionError(
+        err?.response?.data?.detail || err?.message || "Impossible de creer la table."
+      );
     }
   };
 
   const addField = async (payload) => {
     if (!selectedTableId) return;
-    const fieldIndex = (fieldsByTable[selectedTableId] || []).length + 1;
-    const baseName = payload?.name?.trim() || `field_${fieldIndex}`;
-    await schemaApi.createField(selectedTableId, {
-      name: baseName,
-      display_name: payload?.display_name?.trim() || baseName,
-      type: payload?.type || "text",
-      required: !!payload?.required,
-      unique: !!payload?.unique,
-      indexed: !!payload?.indexed,
-      config: payload?.defaultValue ? { default: payload.defaultValue } : {},
-    });
-    await refreshSchema();
+    setSchemaActionError(null);
+    try {
+      const fieldIndex = (fieldsByTable[selectedTableId] || []).length + 1;
+      const baseName = payload?.name?.trim() || `field_${fieldIndex}`;
+      await schemaApi.createField(selectedTableId, {
+        name: baseName,
+        display_name: payload?.display_name?.trim() || baseName,
+        type: payload?.type || "text",
+        required: !!payload?.required,
+        unique: !!payload?.unique,
+        indexed: !!payload?.indexed,
+        config: payload?.defaultValue ? { default: payload.defaultValue } : {},
+      });
+      await refreshSchema();
+    } catch (err) {
+      setSchemaActionError(
+        err?.response?.data?.detail || err?.message || "Impossible de creer le champ."
+      );
+    }
   };
 
   const renameTable = async () => {
@@ -906,11 +1003,18 @@ export default function EditorPage() {
       return;
     }
     if (!cleaned || cleaned === current.name) return;
-    await schemaApi.updateTable(selectedTableId, {
-      name: cleaned,
-      display_name: cleaned,
-    });
-    await refreshSchema();
+    setSchemaActionError(null);
+    try {
+      await schemaApi.updateTable(selectedTableId, {
+        name: cleaned,
+        display_name: cleaned,
+      });
+      await refreshSchema();
+    } catch (err) {
+      setSchemaActionError(
+        err?.response?.data?.detail || err?.message || "Impossible de renommer la table."
+      );
+    }
   };
 
   const editField = async (field) => {
@@ -943,20 +1047,85 @@ export default function EditorPage() {
     if (nextType !== String(field.type || "").toLowerCase()) payload.type = nextType;
     if (!Object.keys(payload).length) return;
 
-    await schemaApi.updateField(fieldId, payload);
-    await refreshSchema();
+    setSchemaActionError(null);
+    try {
+      await schemaApi.updateField(fieldId, payload);
+      await refreshSchema();
+    } catch (err) {
+      setSchemaActionError(
+        err?.response?.data?.detail || err?.message || "Impossible de modifier le champ."
+      );
+    }
   };
 
   const toggleFieldRequired = async (field) => {
-    await schemaApi.updateField(field.tracking_id || field.id, {
-      required: !field.required,
-    });
-    await refreshSchema();
+    setSchemaActionError(null);
+    try {
+      await schemaApi.updateField(field.tracking_id || field.id, {
+        required: !field.required,
+      });
+      await refreshSchema();
+    } catch (err) {
+      setSchemaActionError(
+        err?.response?.data?.detail || err?.message || "Impossible de mettre a jour le champ."
+      );
+    }
   };
 
   const deleteField = async (field) => {
-    await schemaApi.deleteField(field.tracking_id || field.id);
-    await refreshSchema();
+    setSchemaActionError(null);
+    try {
+      await schemaApi.deleteField(field.tracking_id || field.id);
+      await refreshSchema();
+    } catch (err) {
+      setSchemaActionError(
+        err?.response?.data?.detail || err?.message || "Impossible de supprimer le champ."
+      );
+    }
+  };
+
+  const deleteTable = async () => {
+    if (!selectedTableId) return;
+    const current = tables.find((table) => table.tracking_id === selectedTableId);
+    const accepted = window.confirm(
+      `Supprimer la table "${current?.name || "selectionnee"}" ?`
+    );
+    if (!accepted) return;
+
+    setSchemaActionError(null);
+    try {
+      await schemaApi.deleteTable(selectedTableId);
+      await refreshSchema();
+    } catch (err) {
+      setSchemaActionError(
+        err?.response?.data?.detail || err?.message || "Impossible de supprimer la table."
+      );
+    }
+  };
+
+  const createRelation = async (payload) => {
+    if (!safeProjectId) return;
+    setSchemaActionError(null);
+    try {
+      await schemaApi.createRelation(safeProjectId, payload);
+      await refreshSchema();
+    } catch (err) {
+      setSchemaActionError(
+        err?.response?.data?.detail || err?.message || "Impossible de creer la relation."
+      );
+    }
+  };
+
+  const deleteRelation = async (relationId) => {
+    setSchemaActionError(null);
+    try {
+      await schemaApi.deleteRelation(relationId);
+      await refreshSchema();
+    } catch (err) {
+      setSchemaActionError(
+        err?.response?.data?.detail || err?.message || "Impossible de supprimer la relation."
+      );
+    }
   };
 
   const selectedInPage =
@@ -965,6 +1134,10 @@ export default function EditorPage() {
     (componentsByPage[activePageId] || []).some((c) => c.tracking_id === selectedComponent.id);
 
   // ───────────────────────── RENDER ─────────────────────────────
+  if (authLoading) {
+    return <Loader text="Checking session..." />;
+  }
+
   return (
     <div
       style={{
@@ -989,7 +1162,25 @@ export default function EditorPage() {
         toggleAi={() => setAiPanelOpen((p) => !p)}
         aiOpen={aiPanelOpen}
         onBack={() => navigate("/dashboard")}
+        onPreview={handlePreview}
+        onExport={handleExport}
+        exportBusy={generationBusy}
       />
+      {loadingProject && (
+        <div style={{ padding: "8px 16px", color: "#7A5C44", fontFamily: "'DM Sans', sans-serif", fontSize: 13 }}>
+          Chargement du projet...
+        </div>
+      )}
+      {projectError && (
+        <div style={{ padding: "8px 16px", color: "#B03030", fontFamily: "'DM Sans', sans-serif", fontSize: 13 }}>
+          {projectError}
+        </div>
+      )}
+      {generationError && (
+        <div style={{ padding: "8px 16px", color: "#B03030", fontFamily: "'DM Sans', sans-serif", fontSize: 13 }}>
+          {generationError}
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: 8, padding: isMobileLayout ? "8px 12px" : 0 }}>
         {isMobileLayout && (
@@ -1095,11 +1286,15 @@ export default function EditorPage() {
             setSelectedTableId={setSelectedTableId}
             tables={tables}
             fieldsByTable={fieldsByTable}
+            relations={relations}
             loading={loadingSchema}
-            error={schemaError}
+            error={schemaError || schemaActionError}
             onCreateTable={addTable}
             onCreateField={addField}
+            onCreateRelation={createRelation}
             onRenameTable={renameTable}
+            onDeleteTable={deleteTable}
+            onDeleteRelation={deleteRelation}
             onToggleRequired={toggleFieldRequired}
             onEditField={editField}
             onDeleteField={deleteField}
@@ -1109,18 +1304,79 @@ export default function EditorPage() {
         {activeTab === "workflows" && (
           <WorkflowsTab
             workflows={workflows}
+            executionsByWorkflow={executionsByWorkflow}
             loading={loadingWorkflows}
-            error={workflowsError}
-            onCreate={() =>
-              createWorkflow({
-                nom: `Workflow ${workflows.length + 1}`,
-                description: "Auto-created",
-                actif: true,
-                etapes: [],
-              })
-            }
-            onToggle={(wf) => updateWorkflow(wf.tracking_id, { actif: !wf.actif })}
-            onDelete={(wf) => removeWorkflow(wf.tracking_id)}
+            error={workflowsError || workflowsActionError}
+            onCreate={async () => {
+              setWorkflowsActionError(null);
+              try {
+                await createWorkflow({
+                  nom: `Workflow ${workflows.length + 1}`,
+                  description: "Auto-created",
+                  actif: true,
+                  etapes: [],
+                });
+              } catch (err) {
+                setWorkflowsActionError(
+                  err?.response?.data?.detail || err?.message || "Impossible de creer le workflow."
+                );
+              }
+            }}
+            onToggle={async (wf) => {
+              setWorkflowsActionError(null);
+              try {
+                await updateWorkflow(wf.tracking_id, { actif: !wf.actif });
+              } catch (err) {
+                setWorkflowsActionError(
+                  err?.response?.data?.detail || err?.message || "Impossible de modifier le workflow."
+                );
+              }
+            }}
+            onDelete={async (wf) => {
+              setWorkflowsActionError(null);
+              try {
+                await removeWorkflow(wf.tracking_id);
+              } catch (err) {
+                setWorkflowsActionError(
+                  err?.response?.data?.detail || err?.message || "Impossible de supprimer le workflow."
+                );
+              }
+            }}
+            onEdit={async (wf) => {
+              const nextNameRaw = window.prompt("Nom du workflow", wf.nom || "");
+              if (nextNameRaw === null) return;
+              const nextName = nextNameRaw.trim();
+              if (nextName.length < 2) {
+                setWorkflowsActionError("Le nom du workflow doit contenir au moins 2 caracteres.");
+                return;
+              }
+              const nextDescriptionRaw = window.prompt(
+                "Description (optionnelle)",
+                wf.description || ""
+              );
+              if (nextDescriptionRaw === null) return;
+              setWorkflowsActionError(null);
+              try {
+                await updateWorkflow(wf.tracking_id, {
+                  nom: nextName,
+                  description: nextDescriptionRaw.trim() || null,
+                });
+              } catch (err) {
+                setWorkflowsActionError(
+                  err?.response?.data?.detail || err?.message || "Impossible de modifier le workflow."
+                );
+              }
+            }}
+            onLoadExecutions={async (wf) => {
+              setWorkflowsActionError(null);
+              try {
+                await loadExecutions(wf.tracking_id);
+              } catch (err) {
+                setWorkflowsActionError(
+                  err?.response?.data?.detail || err?.message || "Impossible de charger les executions."
+                );
+              }
+            }}
           />
         )}
 
@@ -1134,6 +1390,8 @@ export default function EditorPage() {
           sendMessage={sendMessage}
           isTyping={isAiTyping}
           chatEndRef={chatEndRef}
+          onClearHistory={clearAiHistory}
+          aiError={aiError}
         />
       </div>
 
@@ -1147,12 +1405,31 @@ export default function EditorPage() {
           }}
         />
       )}
+      {previewOpen && (
+        <GenerationModal
+          generations={generations}
+          loading={loadingGenerations}
+          onClose={() => setPreviewOpen(false)}
+          onRefresh={fetchGenerations}
+          onDownload={(g) => downloadGeneration(g.tracking_id, g.nom)}
+        />
+      )}
     </div>
   );
 }
 
 // ───────────────────────── SUB COMPONENTS ─────────────────────────
-function EditorNavbar({ project, activeTab, setActiveTab, toggleAi, aiOpen, onBack }) {
+function EditorNavbar({
+  project,
+  activeTab,
+  setActiveTab,
+  toggleAi,
+  aiOpen,
+  onBack,
+  onPreview,
+  onExport,
+  exportBusy,
+}) {
   const tabs = [
     { key: "tables", label: "Tables" },
     { key: "interface", label: "Interface" },
@@ -1275,6 +1552,7 @@ function EditorNavbar({ project, activeTab, setActiveTab, toggleAi, aiOpen, onBa
           />
         </button>
         <button
+          onClick={onPreview}
           style={{
             background: "none",
             border: "1px solid #3D2010",
@@ -1288,6 +1566,8 @@ function EditorNavbar({ project, activeTab, setActiveTab, toggleAi, aiOpen, onBa
           Preview
         </button>
         <button
+          onClick={onExport}
+          disabled={!!exportBusy}
           style={{
             backgroundColor: "#C4622D",
             border: "1px solid #C4622D",
@@ -1295,10 +1575,11 @@ function EditorNavbar({ project, activeTab, setActiveTab, toggleAi, aiOpen, onBa
             fontFamily: "'DM Sans', sans-serif",
             padding: "8px 14px",
             borderRadius: 10,
-            cursor: "pointer",
+            cursor: exportBusy ? "not-allowed" : "pointer",
+            opacity: exportBusy ? 0.7 : 1,
           }}
         >
-          Export
+          {exportBusy ? "Exporting..." : "Export"}
         </button>
       </div>
     </div>
@@ -2179,11 +2460,15 @@ function TablesTab({
   setSelectedTableId,
   tables,
   fieldsByTable,
+  relations,
   loading,
   error,
   onCreateTable,
   onCreateField,
+  onCreateRelation,
   onRenameTable,
+  onDeleteTable,
+  onDeleteRelation,
   onToggleRequired,
   onEditField,
   onDeleteField,
@@ -2205,6 +2490,16 @@ function TablesTab({
     indexed: false,
     defaultValue: "",
   });
+  const [showRelationForm, setShowRelationForm] = useState(false);
+  const [relationForm, setRelationForm] = useState({
+    source_table_id: "",
+    target_table_id: "",
+    name: "",
+    type: "one_to_many",
+    description: "",
+    source_key: "id",
+    target_key: "id",
+  });
 
   const resetTableForm = () =>
     setTableForm({
@@ -2221,6 +2516,16 @@ function TablesTab({
       unique: false,
       indexed: false,
       defaultValue: "",
+    });
+  const resetRelationForm = () =>
+    setRelationForm({
+      source_table_id: "",
+      target_table_id: "",
+      name: "",
+      type: "one_to_many",
+      description: "",
+      source_key: "id",
+      target_key: "id",
     });
 
   const submitTableForm = async (e) => {
@@ -2243,6 +2548,19 @@ function TablesTab({
     await onCreateField(fieldForm);
     resetFieldForm();
     setShowFieldForm(false);
+  };
+
+  const submitRelationForm = async (e) => {
+    e.preventDefault();
+    if (!relationForm.source_table_id || !relationForm.target_table_id) return;
+    const defaultName = `${list.find((t) => t.tracking_id === relationForm.source_table_id)?.name || "source"}_${relationForm.type}_${list.find((t) => t.tracking_id === relationForm.target_table_id)?.name || "target"}`;
+    await onCreateRelation({
+      ...relationForm,
+      name: relationForm.name.trim() || defaultName,
+      description: relationForm.description.trim() || null,
+    });
+    resetRelationForm();
+    setShowRelationForm(false);
   };
 
   return (
@@ -2366,6 +2684,20 @@ function TablesTab({
                   Rename Table
                 </button>
                 <button
+                  onClick={onDeleteTable}
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    border: "1px solid #F1C7C7",
+                    color: "#B03030",
+                    borderRadius: 6,
+                    padding: "6px 12px",
+                    fontFamily: "'DM Sans', sans-serif",
+                    cursor: "pointer",
+                  }}
+                >
+                  Delete Table
+                </button>
+                <button
                   onClick={() => setShowFieldForm((prev) => !prev)}
                   style={{
                     backgroundColor: "#C4622D",
@@ -2378,6 +2710,20 @@ function TablesTab({
                   }}
                 >
                   {showFieldForm ? "Close" : "+ Add Field"}
+                </button>
+                <button
+                  onClick={() => setShowRelationForm((prev) => !prev)}
+                  style={{
+                    backgroundColor: "#1A0E0A",
+                    border: "none",
+                    color: "#FFFFFF",
+                    borderRadius: 6,
+                    padding: "6px 12px",
+                    fontFamily: "'DM Sans', sans-serif",
+                    cursor: "pointer",
+                  }}
+                >
+                  {showRelationForm ? "Close" : "+ Add Relation"}
                 </button>
               </div>
             </div>
@@ -2442,6 +2788,102 @@ function TablesTab({
                 </button>
               </form>
             )}
+            {showRelationForm && (
+              <form
+                onSubmit={submitRelationForm}
+                style={{
+                  marginBottom: 16,
+                  border: "1px solid #E8D9C4",
+                  borderRadius: 10,
+                  padding: 12,
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 10,
+                }}
+              >
+                <select
+                  value={relationForm.source_table_id}
+                  onChange={(e) =>
+                    setRelationForm((prev) => ({ ...prev, source_table_id: e.target.value }))
+                  }
+                  style={{ padding: "8px 10px", border: "1px solid #E8D9C4", borderRadius: 6 }}
+                  required
+                >
+                  <option value="">Source table</option>
+                  {list.map((table) => (
+                    <option key={table.tracking_id} value={table.tracking_id}>
+                      {table.name}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={relationForm.target_table_id}
+                  onChange={(e) =>
+                    setRelationForm((prev) => ({ ...prev, target_table_id: e.target.value }))
+                  }
+                  style={{ padding: "8px 10px", border: "1px solid #E8D9C4", borderRadius: 6 }}
+                  required
+                >
+                  <option value="">Target table</option>
+                  {list.map((table) => (
+                    <option key={table.tracking_id} value={table.tracking_id}>
+                      {table.name}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  value={relationForm.name}
+                  onChange={(e) => setRelationForm((prev) => ({ ...prev, name: e.target.value }))}
+                  placeholder="relation_name (optional)"
+                  style={{ gridColumn: "1 / -1", padding: "8px 10px", border: "1px solid #E8D9C4", borderRadius: 6 }}
+                />
+                <select
+                  value={relationForm.type}
+                  onChange={(e) => setRelationForm((prev) => ({ ...prev, type: e.target.value }))}
+                  style={{ padding: "8px 10px", border: "1px solid #E8D9C4", borderRadius: 6 }}
+                >
+                  {["one_to_many", "many_to_one", "many_to_many"].map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  value={relationForm.source_key}
+                  onChange={(e) => setRelationForm((prev) => ({ ...prev, source_key: e.target.value }))}
+                  placeholder="source_key"
+                  style={{ padding: "8px 10px", border: "1px solid #E8D9C4", borderRadius: 6 }}
+                />
+                <input
+                  value={relationForm.target_key}
+                  onChange={(e) => setRelationForm((prev) => ({ ...prev, target_key: e.target.value }))}
+                  placeholder="target_key"
+                  style={{ padding: "8px 10px", border: "1px solid #E8D9C4", borderRadius: 6 }}
+                />
+                <input
+                  value={relationForm.description}
+                  onChange={(e) =>
+                    setRelationForm((prev) => ({ ...prev, description: e.target.value }))
+                  }
+                  placeholder="Description (optional)"
+                  style={{ gridColumn: "1 / -1", padding: "8px 10px", border: "1px solid #E8D9C4", borderRadius: 6 }}
+                />
+                <button
+                  type="submit"
+                  style={{
+                    justifySelf: "end",
+                    backgroundColor: "#2D5A1B",
+                    color: "#FFF",
+                    border: "none",
+                    borderRadius: 6,
+                    padding: "8px 12px",
+                    cursor: "pointer",
+                  }}
+                >
+                  Create Relation
+                </button>
+              </form>
+            )}
             <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'DM Sans', sans-serif" }}>
               <thead>
                 <tr style={{ backgroundColor: "#FBF4E9" }}>
@@ -2493,6 +2935,58 @@ function TablesTab({
               ))}
               </tbody>
             </table>
+            <div style={{ marginTop: 24 }}>
+              <div
+                style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: 24,
+                  marginBottom: 10,
+                }}
+              >
+                Relations
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {(relations || []).length === 0 && (
+                  <div style={{ color: "#7A5C44", fontFamily: "'DM Sans', sans-serif" }}>
+                    No relation defined yet.
+                  </div>
+                )}
+                {(relations || []).map((relation) => {
+                  const source = list.find((t) => t.tracking_id === relation.source_table_id)?.name || relation.source_table_id;
+                  const target = list.find((t) => t.tracking_id === relation.target_table_id)?.name || relation.target_table_id;
+                  return (
+                    <div
+                      key={relation.tracking_id}
+                      style={{
+                        backgroundColor: "#FFFFFF",
+                        border: "1px solid #E8D9C4",
+                        borderRadius: 10,
+                        padding: "10px 12px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 12,
+                      }}
+                    >
+                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        <div style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
+                          {relation.name}
+                        </div>
+                        <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#7A5C44" }}>
+                          {source} ({relation.source_key}) {"->"} {target} ({relation.target_key}) [{relation.type}]
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => onDeleteRelation(relation.tracking_id)}
+                        style={{ background: "none", border: "none", cursor: "pointer" }}
+                      >
+                        <IconTrash color="#B03030" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </>
         )}
       </div>
@@ -2527,7 +3021,17 @@ function TypeBadge({ type }) {
   );
 }
 
-function WorkflowsTab({ workflows, loading, error, onCreate, onToggle, onDelete }) {
+function WorkflowsTab({
+  workflows,
+  executionsByWorkflow,
+  loading,
+  error,
+  onCreate,
+  onToggle,
+  onDelete,
+  onEdit,
+  onLoadExecutions,
+}) {
   return (
     <div style={{ flex: 1, padding: 32, overflowY: "auto" }}>
       <div
@@ -2588,10 +3092,49 @@ function WorkflowsTab({ workflows, loading, error, onCreate, onToggle, onDelete 
                 {wf.nom}
               </div>
               <div style={{ color: "#7A5C44", fontFamily: "'DM Sans', sans-serif" }}>{wf.description}</div>
+              {(executionsByWorkflow?.[wf.tracking_id] || []).length > 0 && (
+                <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+                  {executionsByWorkflow[wf.tracking_id].slice(0, 3).map((exec) => (
+                    <div
+                      key={exec.tracking_id}
+                      style={{
+                        fontFamily: "'DM Sans', sans-serif",
+                        fontSize: 12,
+                        color: "#7A5C44",
+                        backgroundColor: "#FBF4E9",
+                        borderRadius: 8,
+                        padding: "6px 8px",
+                      }}
+                    >
+                      {exec.statut} - {new Date(exec.created_at).toLocaleString()}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <TogglePill label={wf.actif ? "Active" : "Inactive"} active={wf.actif} onClick={() => onToggle(wf)} />
             <div style={{ display: "flex", gap: 10 }}>
-              <IconEdit color="#7A5C44" />
+              <button
+                onClick={() => onLoadExecutions(wf)}
+                style={{
+                  border: "1px solid #E8D9C4",
+                  background: "#FFFFFF",
+                  borderRadius: 8,
+                  padding: "4px 8px",
+                  cursor: "pointer",
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 12,
+                  color: "#7A5C44",
+                }}
+              >
+                History
+              </button>
+              <button
+                onClick={() => onEdit(wf)}
+                style={{ background: "none", border: "none", cursor: "pointer" }}
+              >
+                <IconEdit color="#7A5C44" />
+              </button>
               <button
                 onClick={() => onDelete(wf)}
                 style={{ background: "none", border: "none", cursor: "pointer" }}
@@ -2726,6 +3269,108 @@ function WorkflowModal({ step, setStep, onClose }) {
   );
 }
 
+function GenerationModal({ generations, loading, onClose, onRefresh, onDownload }) {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        backgroundColor: "rgba(0,0,0,0.25)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 300,
+      }}
+    >
+      <div
+        style={{
+          width: 720,
+          maxHeight: "80vh",
+          overflowY: "auto",
+          backgroundColor: "#FFFFFF",
+          borderRadius: 16,
+          padding: 24,
+          boxShadow: "0 12px 36px rgba(0,0,0,0.18)",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 24 }}>Generations</span>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={onRefresh}
+              style={{
+                border: "1px solid #E8D9C4",
+                backgroundColor: "#FFFFFF",
+                borderRadius: 8,
+                padding: "6px 10px",
+                cursor: "pointer",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+            >
+              Refresh
+            </button>
+            <button
+              onClick={onClose}
+              style={{ background: "none", border: "none", cursor: "pointer" }}
+            >
+              <IconClose color="#7A5C44" />
+            </button>
+          </div>
+        </div>
+        {loading && <div style={{ color: "#7A5C44", fontFamily: "'DM Sans', sans-serif" }}>Loading generations...</div>}
+        {!loading && generations.length === 0 && (
+          <div style={{ color: "#7A5C44", fontFamily: "'DM Sans', sans-serif" }}>
+            No generation yet.
+          </div>
+        )}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {generations.map((g) => (
+            <div
+              key={g.tracking_id}
+              style={{
+                border: "1px solid #E8D9C4",
+                borderRadius: 10,
+                padding: "10px 12px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+              }}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <div style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>{g.nom}</div>
+                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#7A5C44" }}>
+                  Status: {g.statut} | Created: {new Date(g.created_at).toLocaleString()}
+                </div>
+                {g.erreur && (
+                  <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#B03030" }}>
+                    {g.erreur}
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => onDownload(g)}
+                disabled={!g.url_zip}
+                style={{
+                  border: "1px solid #E8D9C4",
+                  backgroundColor: g.url_zip ? "#1A0E0A" : "#F5F0EB",
+                  color: g.url_zip ? "#FFFFFF" : "#9C8A78",
+                  borderRadius: 8,
+                  padding: "6px 10px",
+                  cursor: g.url_zip ? "pointer" : "not-allowed",
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+              >
+                Download ZIP
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const modalInputStyle = {
   padding: "10px 12px",
   borderRadius: 8,
@@ -2743,8 +3388,11 @@ function AiChatPanel({
   sendMessage,
   isTyping,
   chatEndRef,
+  onClearHistory,
+  aiError,
 }) {
   const suggested = [
+    "/schema Build a booking app with users, rooms, reservations and payments",
     "Design a data table for my app",
     "What components should I use?",
     "Help me create a form",
@@ -2793,6 +3441,21 @@ function AiChatPanel({
           />
         </div>
         <button
+          onClick={onClearHistory}
+          style={{
+            background: "none",
+            border: "1px solid #3D2010",
+            borderRadius: 8,
+            color: "#A08060",
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 12,
+            padding: "4px 8px",
+            cursor: "pointer",
+          }}
+        >
+          Clear
+        </button>
+        <button
           onClick={onClose}
           style={{ background: "none", border: "none", cursor: "pointer" }}
         >
@@ -2819,6 +3482,11 @@ function AiChatPanel({
         >
           {projectName}
         </div>
+        {aiError && (
+          <div style={{ marginTop: 6, color: "#B03030", fontFamily: "'DM Sans', sans-serif", fontSize: 12 }}>
+            {aiError}
+          </div>
+        )}
       </div>
       <div
         style={{
@@ -2872,7 +3540,7 @@ function AiChatPanel({
               position: "relative",
             }}
           >
-            {msg.role === "ai" && (
+            {msg.role !== "user" && (
               <div
                 style={{
                   position: "absolute",
@@ -2890,7 +3558,7 @@ function AiChatPanel({
                 <IconBrain color="#D4A017" size={14} />
               </div>
             )}
-            {msg.text}
+            {msg.text || msg.content}
           </div>
         ))}
         {isTyping && (
