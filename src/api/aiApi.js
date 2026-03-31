@@ -6,7 +6,8 @@ export const aiApi = {
   clearHistory: (projectId) => axios.delete(`/ai/projects/${projectId}/history`),
   generateSchema: (projectId, payload) =>
     axios.post(`/ai/projects/${projectId}/generate-schema`, payload),
+  generateInterface: (projectId, payload) =>
+    axios.post(`/ai/projects/${projectId}/generate-interface`, payload),
 };
 
 export default aiApi;
-

@@ -305,6 +305,9 @@ export default function EditorPage() {
   const [showLeftPanel, setShowLeftPanel] = useState(true);
   const [showRightPanel, setShowRightPanel] = useState(true);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewBusy, setPreviewBusy] = useState(false);
+  const [deployBusy, setDeployBusy] = useState(false);
+  const [deploymentResult, setDeploymentResult] = useState(null);
   const [generations, setGenerations] = useState([]);
   const [loadingGenerations, setLoadingGenerations] = useState(false);
   const [generationBusy, setGenerationBusy] = useState(false);
@@ -355,14 +358,46 @@ export default function EditorPage() {
   };
 
   const handlePreview = async () => {
-    setPreviewOpen(true);
-    await fetchGenerations();
+    if (!safeProjectId) return;
+    setPreviewBusy(true);
+    setGenerationError(null);
+    setDeploymentResult(null);
+    try {
+      const { data } = await generatorApi.deployPreview(safeProjectId);
+      if (data?.preview_url) {
+        window.open(data.preview_url, "_blank", "noopener,noreferrer");
+      }
+    } catch (err) {
+      setGenerationError(
+        err?.response?.data?.detail || err?.message || "Impossible de deployer la preview."
+      );
+    } finally {
+      setPreviewBusy(false);
+    }
+  };
+
+  const handleDeploy = async () => {
+    if (!safeProjectId) return;
+    setDeployBusy(true);
+    setGenerationError(null);
+    setDeploymentResult(null);
+    try {
+      const { data } = await generatorApi.deploy(safeProjectId);
+      setDeploymentResult(data || null);
+    } catch (err) {
+      setGenerationError(
+        err?.response?.data?.detail || err?.message || "Impossible de deployer sur Vercel."
+      );
+    } finally {
+      setDeployBusy(false);
+    }
   };
 
   const handleExport = async () => {
     if (!safeProjectId) return;
     setGenerationBusy(true);
     setGenerationError(null);
+    setDeploymentResult(null);
     try {
       const fallbackName = `build-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}`;
       const exportName = (project?.name || fallbackName).trim();
@@ -741,6 +776,22 @@ export default function EditorPage() {
             },
           ]);
           await refreshSchema();
+        }
+      } else if (message.toLowerCase().startsWith("/interface ")) {
+        const description = message.slice(11).trim();
+        if (description.length < 10) {
+          setAiError("Description trop courte pour la generation d'interface.");
+        } else {
+          const { data } = await aiApi.generateInterface(safeProjectId, { description });
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              text: data?.message || "Interface generee avec succes.",
+            },
+          ]);
+          await hydrate();
+          setActiveTab("interface");
         }
       } else {
         const { data } = await aiApi.chat(safeProjectId, { content: message });
@@ -1163,8 +1214,11 @@ export default function EditorPage() {
         aiOpen={aiPanelOpen}
         onBack={() => navigate("/dashboard")}
         onPreview={handlePreview}
+        onDeploy={handleDeploy}
         onExport={handleExport}
         exportBusy={generationBusy}
+        previewBusy={previewBusy}
+        deployBusy={deployBusy}
       />
       {loadingProject && (
         <div style={{ padding: "8px 16px", color: "#7A5C44", fontFamily: "'DM Sans', sans-serif", fontSize: 13 }}>
@@ -1179,6 +1233,30 @@ export default function EditorPage() {
       {generationError && (
         <div style={{ padding: "8px 16px", color: "#B03030", fontFamily: "'DM Sans', sans-serif", fontSize: 13 }}>
           {generationError}
+        </div>
+      )}
+      {deploymentResult?.url && (
+        <div
+          style={{
+            padding: "10px 16px",
+            color: "#2D5A1B",
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 13,
+            display: "flex",
+            gap: 8,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <span>Deployment termine:</span>
+          <a
+            href={deploymentResult.url}
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: "#C4622D", textDecoration: "underline" }}
+          >
+            {deploymentResult.url}
+          </a>
         </div>
       )}
 
@@ -1427,8 +1505,11 @@ function EditorNavbar({
   aiOpen,
   onBack,
   onPreview,
+  onDeploy,
   onExport,
   exportBusy,
+  previewBusy,
+  deployBusy,
 }) {
   const tabs = [
     { key: "tables", label: "Tables" },
@@ -1553,6 +1634,7 @@ function EditorNavbar({
         </button>
         <button
           onClick={onPreview}
+          disabled={!!previewBusy}
           style={{
             background: "none",
             border: "1px solid #3D2010",
@@ -1560,10 +1642,27 @@ function EditorNavbar({
             fontFamily: "'DM Sans', sans-serif",
             padding: "8px 12px",
             borderRadius: 10,
-            cursor: "pointer",
+            cursor: previewBusy ? "not-allowed" : "pointer",
+            opacity: previewBusy ? 0.7 : 1,
           }}
         >
-          Preview
+          {previewBusy ? "Opening..." : "Preview"}
+        </button>
+        <button
+          onClick={onDeploy}
+          disabled={!!deployBusy}
+          style={{
+            background: "none",
+            border: "1px solid #C4622D",
+            color: "#F1C27D",
+            fontFamily: "'DM Sans', sans-serif",
+            padding: "8px 12px",
+            borderRadius: 10,
+            cursor: deployBusy ? "not-allowed" : "pointer",
+            opacity: deployBusy ? 0.7 : 1,
+          }}
+        >
+          {deployBusy ? "Deploying..." : "Deploy"}
         </button>
         <button
           onClick={onExport}
@@ -3393,6 +3492,7 @@ function AiChatPanel({
 }) {
   const suggested = [
     "/schema Build a booking app with users, rooms, reservations and payments",
+    "/interface Design a mobile-first hotel booking app with a home page, reservation form, rooms list and profile page",
     "Design a data table for my app",
     "What components should I use?",
     "Help me create a form",
